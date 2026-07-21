@@ -1,0 +1,19 @@
+.richer-editor {
+  --richer-background: #ffffff;
+  --richer-foreground: #171717;
+  --richer-border: #e5e5e5;
+  --richer-radius: 0.5rem;
+
+  min-height: 12rem;
+  padding: 1rem;
+  color: var(--richer-foreground);
+  background: var(--richer-background);
+  border: 1px solid var(--richer-border);
+  border-radius: var(--richer-radius);
+  outline: none;
+}
+
+.richer-editor:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

@@ -2,7 +2,7 @@
 
 A modern, extensible rich-text editor for React, built on Tiptap.
 
-Richer Editor 当前处于 `0.1.0` 开发阶段。Playground 使用 Vite，库产物使用 tsdown 构建。
+Richer Editor 当前处于早期开发阶段。Playground 使用 Vite，库产物使用 tsdown 构建。
 
 ## 环境要求
 
