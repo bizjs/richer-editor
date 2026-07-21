@@ -1,0 +1,23 @@
+.playground-shell {
+  width: min(100% - 2rem, 72rem);
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+.playground-header {
+  margin-bottom: 2rem;
+}
+
+.playground-header h1 {
+  margin: 0;
+  color: #171717;
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .playground-header h1 {
+    color: #fafafa;
+  }
+}
