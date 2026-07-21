@@ -1,9 +1,9 @@
-import { defineConfig } from "tsdown";
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["esm"],
-  target: "es2022",
+  entry: ['src/index.ts'],
+  format: ['esm'],
+  target: 'es2022',
   clean: true,
   sourcemap: true,
   dts: {
@@ -11,7 +11,7 @@ export default defineConfig({
   },
   css: {
     splitting: false,
-    fileName: "styles.css",
+    fileName: 'styles.css',
   },
   deps: {
     skipNodeModulesBundle: true,

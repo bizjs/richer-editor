@@ -27,13 +27,11 @@ pnpm lint
 pnpm format:check
 pnpm build
 pnpm test:ssr
-pnpm test:package
 pnpm check
 ```
 
 - `build` 通过 tsdown 生成 ESM、类型、CSS、sourcemap，并用 publint 校验发布配置。
 - `test:ssr` 验证构建产物可以在 Node 环境安全导入。
-- `test:package` 将真实 tarball 安装到工作区外的最小 Vite React 19 项目并构建。
 - `check` 运行当前全部非浏览器质量检查。
 
 ## Workspace
@@ -41,7 +39,6 @@ pnpm check
 ```text
 apps/playground       React/Vite 交互验证应用
 packages/editor       @bizjs/richer-editor 核心包
-tests/fixtures        发布物消费夹具
 ```
 
 编辑器包不应依赖 Playground。Playground 和测试消费者必须通过包的公开 exports 使用编辑器。

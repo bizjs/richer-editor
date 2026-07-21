@@ -1,7 +1,7 @@
-import { RicherEditor } from "@bizjs/richer-editor";
-import "@bizjs/richer-editor/styles.css";
+import { RicherEditor } from '@bizjs/richer-editor';
+import '@bizjs/richer-editor/styles.css';
 
-import "./App.css";
+import './App.css';
 
 function App() {
   return (
