@@ -1,0 +1,26 @@
+{
+  "name": "richer-editor-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @bizjs/richer-editor build && pnpm --parallel --filter @bizjs/richer-editor --filter @bizjs/richer-editor-playground dev",
+    "build": "pnpm --filter @bizjs/richer-editor build && pnpm --filter @bizjs/richer-editor-playground build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "oxlint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r --if-present test",
+    "test:ssr": "pnpm --filter @bizjs/richer-editor test:ssr",
+    "test:package": "node scripts/verify-package.mjs",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm test:ssr && pnpm test:package"
+  },
+  "devDependencies": {
+    "oxlint": "^1.71.0",
+    "prettier": "^3.9.0"
+  }
+}
