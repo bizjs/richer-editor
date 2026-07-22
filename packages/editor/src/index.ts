@@ -16,6 +16,7 @@ export {
 } from './document';
 export { RicherEditor, type RicherEditorProps } from './RicherEditor';
 export {
+  createSchemaRegistry,
   richerSchemaRegistry,
   type RicherSchemaRegistry,
 } from './schema';

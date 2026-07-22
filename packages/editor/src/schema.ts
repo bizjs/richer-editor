@@ -9,9 +9,26 @@ export interface RicherSchemaRegistry {
   schema: Schema;
 }
 
-const extensions: Extensions = [Document, Paragraph, Text];
+const coreExtensions: Extensions = [Document, Paragraph, Text];
 
-export const richerSchemaRegistry: RicherSchemaRegistry = {
-  extensions,
-  schema: getSchema(extensions),
-};
+export function createSchemaRegistry(
+  additionalExtensions: Extensions = [],
+): RicherSchemaRegistry {
+  const extensions = [...coreExtensions, ...additionalExtensions];
+  const extensionNames = new Set<string>();
+
+  for (const extension of extensions) {
+    if (extensionNames.has(extension.name)) {
+      throw new Error(`Duplicate extension name: ${extension.name}`);
+    }
+
+    extensionNames.add(extension.name);
+  }
+
+  return {
+    extensions,
+    schema: getSchema(extensions),
+  };
+}
+
+export const richerSchemaRegistry = createSchemaRegistry();

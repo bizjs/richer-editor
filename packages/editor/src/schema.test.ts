@@ -1,6 +1,11 @@
+import { Extension } from '@tiptap/core';
 import { describe, expect, it } from 'vitest';
 
-import { richerSchemaRegistry, type JSONContent } from './index';
+import {
+  createSchemaRegistry,
+  richerSchemaRegistry,
+  type JSONContent,
+} from './index';
 
 describe('richerSchemaRegistry', () => {
   it('round-trips an empty paragraph document through the core schema', () => {
@@ -18,5 +23,13 @@ describe('richerSchemaRegistry', () => {
       'paragraph',
       'text',
     ]);
+  });
+
+  it('rejects duplicate extension names', () => {
+    const duplicateParagraph = Extension.create({ name: 'paragraph' });
+
+    expect(() => createSchemaRegistry([duplicateParagraph])).toThrow(
+      'Duplicate extension name: paragraph',
+    );
   });
 });
