@@ -6,7 +6,7 @@ Richer Editor 当前处于早期开发阶段。Playground 使用 Vite，库产�
 
 ## 环境要求
 
-- Node.js 22.12 或更高版本
+- Node.js 22.18 或更高的 22.x，或 Node.js 24.11 及以上版本
 - pnpm 11.9.0
 
 ## 开始开发

@@ -1,6 +1,18 @@
 :root {
-  color: #171717;
-  background: #fafafa;
+  --playground-background: #f8fafc;
+  --playground-panel: #ffffff;
+  --playground-editor: #ffffff;
+  --playground-code: #0f172a;
+  --playground-foreground: #1e293b;
+  --playground-muted: #64748b;
+  --playground-border: #cbd5e1;
+  --playground-accent: #2563eb;
+  --playground-button: #1e293b;
+  --playground-button-foreground: #ffffff;
+  --playground-code-foreground: #e2e8f0;
+
+  color: var(--playground-foreground);
+  background: var(--playground-background);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,7 +32,16 @@ body {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #fafafa;
-    background: #0a0a0a;
+    --playground-background: #020617;
+    --playground-panel: #0f172a;
+    --playground-editor: #111827;
+    --playground-code: #020617;
+    --playground-foreground: #f8fafc;
+    --playground-muted: #94a3b8;
+    --playground-border: #334155;
+    --playground-accent: #60a5fa;
+    --playground-button: #f8fafc;
+    --playground-button-foreground: #0f172a;
+    --playground-code-foreground: #e2e8f0;
   }
 }
