@@ -11,7 +11,7 @@ describe('richerSchemaRegistry', () => {
   it('round-trips an empty paragraph document through the core schema', () => {
     const content: JSONContent = {
       type: 'doc',
-      content: [{ type: 'paragraph' }],
+      content: [{ type: 'paragraph', attrs: { id: 'block-1' } }],
     };
 
     const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
@@ -22,6 +22,7 @@ describe('richerSchemaRegistry', () => {
       'doc',
       'paragraph',
       'text',
+      'uniqueID',
     ]);
   });
 
@@ -31,6 +32,7 @@ describe('richerSchemaRegistry', () => {
       content: [
         {
           type: 'paragraph',
+          attrs: { id: 'block-2' },
           content: [{ type: 'text', text: 'Hello Richer Editor' }],
         },
       ],

@@ -17,7 +17,10 @@ export {
 export { RicherEditor, type RicherEditorProps } from './RicherEditor';
 export {
   createSchemaRegistry,
+  normalizeBlockIds,
   richerSchemaRegistry,
+  type BlockIdGenerator,
+  type NormalizeBlockIdsOptions,
   type RicherSchemaRegistry,
 } from './schema';
 export type { JSONContent } from '@tiptap/core';
