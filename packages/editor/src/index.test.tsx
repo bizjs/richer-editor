@@ -14,7 +14,7 @@ function makeDocument(text: string, id: string): RicherDocument {
     content: [
       {
         type: 'paragraph',
-        attrs: { id },
+        attrs: { id, textAlign: null },
         content: text ? [{ type: 'text', text }] : [],
       },
     ],
@@ -85,7 +85,7 @@ describe('RicherEditor public component', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-draft' },
+          attrs: { id: 'block-draft', textAlign: null },
           content: [{ type: 'text', text: 'Draft!' }],
         },
       ],

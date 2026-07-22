@@ -40,7 +40,7 @@ describe('normalizeBlockIds', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-1' },
+          attrs: { id: 'block-1', textAlign: null },
           content: [{ type: 'text', text: 'Hello Richer Editor' }],
         },
       ],
@@ -63,7 +63,7 @@ describe('normalizeBlockIds', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-existing' },
+          attrs: { id: 'block-existing', textAlign: null },
           content: [{ type: 'text', text: 'Keep this identity' }],
         },
       ],
@@ -82,12 +82,12 @@ describe('normalizeBlockIds', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-existing' },
+          attrs: { id: 'block-existing', textAlign: null },
           content: [{ type: 'text', text: 'Original block' }],
         },
         {
           type: 'paragraph',
-          attrs: { id: 'block-existing' },
+          attrs: { id: 'block-existing', textAlign: null },
           content: [{ type: 'text', text: 'Copied block' }],
         },
       ],
@@ -101,12 +101,12 @@ describe('normalizeBlockIds', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-existing' },
+          attrs: { id: 'block-existing', textAlign: null },
           content: [{ type: 'text', text: 'Original block' }],
         },
         {
           type: 'paragraph',
-          attrs: { id: 'block-copy' },
+          attrs: { id: 'block-copy', textAlign: null },
           content: [{ type: 'text', text: 'Copied block' }],
         },
       ],

@@ -11,7 +11,12 @@ describe('richerSchemaRegistry', () => {
   it('round-trips an empty paragraph document through the core schema', () => {
     const content: JSONContent = {
       type: 'doc',
-      content: [{ type: 'paragraph', attrs: { id: 'block-1' } }],
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'block-1', textAlign: null },
+        },
+      ],
     };
 
     const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
@@ -28,6 +33,7 @@ describe('richerSchemaRegistry', () => {
       'color',
       'subscript',
       'superscript',
+      'textAlign',
       'uniqueID',
     ]);
   });
@@ -38,7 +44,7 @@ describe('richerSchemaRegistry', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'block-2' },
+          attrs: { id: 'block-2', textAlign: null },
           content: [{ type: 'text', text: 'Hello Richer Editor' }],
         },
       ],
@@ -56,7 +62,7 @@ describe('richerSchemaRegistry', () => {
       content: [
         {
           type: 'heading',
-          attrs: { id: 'heading-1', level: 2 },
+          attrs: { id: 'heading-1', level: 2, textAlign: null },
           content: [
             { type: 'text', text: 'Richer', marks: [{ type: 'bold' }] },
             { type: 'text', text: ' Editor', marks: [{ type: 'underline' }] },
@@ -68,7 +74,7 @@ describe('richerSchemaRegistry', () => {
           content: [
             {
               type: 'paragraph',
-              attrs: { id: 'quote-paragraph-1' },
+              attrs: { id: 'quote-paragraph-1', textAlign: null },
               content: [
                 {
                   type: 'text',
@@ -89,7 +95,7 @@ describe('richerSchemaRegistry', () => {
               content: [
                 {
                   type: 'paragraph',
-                  attrs: { id: 'list-paragraph-1' },
+                  attrs: { id: 'list-paragraph-1', textAlign: null },
                   content: [
                     {
                       type: 'text',
@@ -112,7 +118,10 @@ describe('richerSchemaRegistry', () => {
               content: [
                 {
                   type: 'paragraph',
-                  attrs: { id: 'ordered-list-paragraph-1' },
+                  attrs: {
+                    id: 'ordered-list-paragraph-1',
+                    textAlign: null,
+                  },
                   content: [{ type: 'text', text: 'Third item' }],
                 },
               ],
@@ -127,7 +136,7 @@ describe('richerSchemaRegistry', () => {
         { type: 'horizontalRule', attrs: { id: 'rule-1' } },
         {
           type: 'paragraph',
-          attrs: { id: 'paragraph-3' },
+          attrs: { id: 'paragraph-3', textAlign: null },
           content: [
             { type: 'text', text: 'inline code', marks: [{ type: 'code' }] },
             { type: 'text', text: ' and ' },
@@ -164,7 +173,7 @@ describe('richerSchemaRegistry', () => {
       content: [
         {
           type: 'paragraph',
-          attrs: { id: 'inline-marks-paragraph' },
+          attrs: { id: 'inline-marks-paragraph', textAlign: null },
           content: [
             {
               type: 'text',
@@ -200,6 +209,39 @@ describe('richerSchemaRegistry', () => {
     expect(parsed.toJSON()).toEqual(content);
   });
 
+  it('round-trips paragraph and heading text alignment', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'aligned-heading', level: 2, textAlign: 'center' },
+          content: [{ type: 'text', text: 'Centered heading' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'aligned-paragraph', textAlign: 'right' },
+          content: [{ type: 'text', text: 'Right-aligned paragraph' }],
+        },
+        {
+          type: 'heading',
+          attrs: { id: 'left-heading', level: 3, textAlign: 'left' },
+          content: [{ type: 'text', text: 'Left-aligned heading' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'justified-paragraph', textAlign: 'justify' },
+          content: [{ type: 'text', text: 'Justified paragraph' }],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
   it('round-trips checked and nested task items', () => {
     const content: JSONContent = {
       type: 'doc',
@@ -214,7 +256,7 @@ describe('richerSchemaRegistry', () => {
               content: [
                 {
                   type: 'paragraph',
-                  attrs: { id: 'task-paragraph-1' },
+                  attrs: { id: 'task-paragraph-1', textAlign: null },
                   content: [{ type: 'text', text: 'Write tests' }],
                 },
                 {
@@ -227,7 +269,10 @@ describe('richerSchemaRegistry', () => {
                       content: [
                         {
                           type: 'paragraph',
-                          attrs: { id: 'nested-task-paragraph-1' },
+                          attrs: {
+                            id: 'nested-task-paragraph-1',
+                            textAlign: null,
+                          },
                           content: [{ type: 'text', text: 'Confirm Red' }],
                         },
                       ],
@@ -271,7 +316,10 @@ describe('richerSchemaRegistry', () => {
                   content: [
                     {
                       type: 'paragraph',
-                      attrs: { id: 'table-header-paragraph-1' },
+                      attrs: {
+                        id: 'table-header-paragraph-1',
+                        textAlign: null,
+                      },
                       content: [{ type: 'text', text: 'Name' }],
                     },
                   ],
@@ -288,7 +336,10 @@ describe('richerSchemaRegistry', () => {
                   content: [
                     {
                       type: 'paragraph',
-                      attrs: { id: 'table-header-paragraph-2' },
+                      attrs: {
+                        id: 'table-header-paragraph-2',
+                        textAlign: null,
+                      },
                       content: [{ type: 'text', text: 'Status' }],
                     },
                   ],
@@ -311,7 +362,10 @@ describe('richerSchemaRegistry', () => {
                   content: [
                     {
                       type: 'paragraph',
-                      attrs: { id: 'table-cell-paragraph-1' },
+                      attrs: {
+                        id: 'table-cell-paragraph-1',
+                        textAlign: null,
+                      },
                       content: [{ type: 'text', text: 'Merged cell' }],
                     },
                   ],

@@ -4,6 +4,7 @@ import { TaskItem, TaskList } from '@tiptap/extension-list';
 import { Subscript } from '@tiptap/extension-subscript';
 import { Superscript } from '@tiptap/extension-superscript';
 import { TableKit } from '@tiptap/extension-table';
+import { TextAlign } from '@tiptap/extension-text-align';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
 import type { Schema } from '@tiptap/pm/model';
@@ -53,6 +54,7 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     Color,
     Subscript,
     Superscript,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
     uniqueId,
   ];
 }
