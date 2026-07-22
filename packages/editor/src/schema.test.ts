@@ -25,11 +25,39 @@ describe('richerSchemaRegistry', () => {
     ]);
   });
 
+  it('round-trips a paragraph with text through the core schema', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Hello Richer Editor' }],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
   it('rejects duplicate extension names', () => {
     const duplicateParagraph = Extension.create({ name: 'paragraph' });
 
     expect(() => createSchemaRegistry([duplicateParagraph])).toThrow(
       'Duplicate extension name: paragraph',
     );
+  });
+
+  it('rejects unknown nodes instead of silently deleting them', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [{ type: 'unsupportedBlock' }],
+    };
+
+    expect(() =>
+      richerSchemaRegistry.schema.nodeFromJSON(content),
+    ).toThrow(/Unknown node type.*unsupportedBlock/);
   });
 });
