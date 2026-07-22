@@ -15,4 +15,8 @@ export {
   type UnsupportedSchemaVersionError,
 } from './document';
 export { RicherEditor, type RicherEditorProps } from './RicherEditor';
+export {
+  richerSchemaRegistry,
+  type RicherSchemaRegistry,
+} from './schema';
 export type { JSONContent } from '@tiptap/core';
