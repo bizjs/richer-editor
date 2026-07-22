@@ -28,12 +28,16 @@ describe('richerSchemaRegistry', () => {
       'taskList',
       'taskItem',
       'tableKit',
+      'details',
+      'detailsSummary',
+      'detailsContent',
       'highlight',
       'textStyle',
       'color',
       'subscript',
       'superscript',
       'textAlign',
+      'typography',
       'uniqueID',
     ]);
   });
@@ -369,6 +373,44 @@ describe('richerSchemaRegistry', () => {
                       content: [{ type: 'text', text: 'Merged cell' }],
                     },
                   ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('round-trips details summary and block content', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'details',
+          attrs: { id: 'details-1' },
+          content: [
+            {
+              type: 'detailsSummary',
+              attrs: { id: 'details-summary-1' },
+              content: [{ type: 'text', text: 'More information' }],
+            },
+            {
+              type: 'detailsContent',
+              attrs: { id: 'details-content-1' },
+              content: [
+                {
+                  type: 'paragraph',
+                  attrs: {
+                    id: 'details-content-paragraph-1',
+                    textAlign: null,
+                  },
+                  content: [{ type: 'text', text: 'Hidden details' }],
                 },
               ],
             },

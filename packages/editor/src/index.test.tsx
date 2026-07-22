@@ -21,6 +21,36 @@ function makeDocument(text: string, id: string): RicherDocument {
   });
 }
 
+function makeDetailsDocument(): RicherDocument {
+  return createDocument({
+    type: 'doc',
+    content: [
+      {
+        type: 'details',
+        attrs: { id: 'details' },
+        content: [
+          {
+            type: 'detailsSummary',
+            attrs: { id: 'details-summary' },
+            content: [{ type: 'text', text: 'More information' }],
+          },
+          {
+            type: 'detailsContent',
+            attrs: { id: 'details-content' },
+            content: [
+              {
+                type: 'paragraph',
+                attrs: { id: 'details-paragraph', textAlign: null },
+                content: [{ type: 'text', text: 'Hidden details' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+}
+
 function insertTextAtEnd(editor: HTMLElement, text: string): void {
   const paragraph = editor.querySelector('p');
 
@@ -57,6 +87,18 @@ describe('RicherEditor public component', () => {
     expect(
       screen.getByRole('textbox', { name: 'Document editor' }),
     ).toBeInTheDocument();
+  });
+
+  it('gives a details toggle an accessible name from its summary', () => {
+    render(<RicherEditor defaultDocument={makeDetailsDocument()} />);
+
+    const toggle = screen.getByRole('button', {
+      name: 'Expand details: More information',
+    });
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAccessibleName('Collapse details: More information');
   });
 
   it('edits a default document in uncontrolled mode', async () => {

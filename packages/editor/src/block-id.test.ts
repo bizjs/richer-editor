@@ -351,6 +351,52 @@ describe('normalizeBlockIds', () => {
     expect(new Set(ids)).toHaveLength(9);
     expect(generateId).toHaveBeenCalledTimes(9);
   });
+
+  it('assigns unique IDs to details, summary, and content blocks', () => {
+    let sequence = 0;
+    const generateId = vi.fn(() => `details-block-${(sequence += 1)}`);
+    const normalized = normalizeBlockIds(
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'details',
+            content: [
+              {
+                type: 'detailsSummary',
+                content: [{ type: 'text', text: 'More information' }],
+              },
+              {
+                type: 'detailsContent',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Hidden details' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { generateId },
+    );
+    const ids: string[] = [];
+
+    function collectIds(node: JSONContent): void {
+      if (typeof node.attrs?.id === 'string') {
+        ids.push(node.attrs.id);
+      }
+
+      node.content?.forEach(collectIds);
+    }
+
+    collectIds(normalized);
+
+    expect(ids).toHaveLength(4);
+    expect(new Set(ids)).toHaveLength(4);
+    expect(generateId).toHaveBeenCalledTimes(4);
+  });
 });
 
 describe('block IDs in editor transactions', () => {

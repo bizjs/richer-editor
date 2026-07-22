@@ -1,4 +1,9 @@
 import { getSchema, type Extensions, type JSONContent } from '@tiptap/core';
+import {
+  Details,
+  DetailsContent,
+  DetailsSummary,
+} from '@tiptap/extension-details';
 import { Highlight } from '@tiptap/extension-highlight';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
 import { Subscript } from '@tiptap/extension-subscript';
@@ -6,6 +11,7 @@ import { Superscript } from '@tiptap/extension-superscript';
 import { TableKit } from '@tiptap/extension-table';
 import { TextAlign } from '@tiptap/extension-text-align';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
+import Typography from '@tiptap/extension-typography';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
 import type { Schema } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
@@ -25,6 +31,9 @@ const blockNodeTypes = [
   'blockquote',
   'bulletList',
   'codeBlock',
+  'details',
+  'detailsContent',
+  'detailsSummary',
   'heading',
   'horizontalRule',
   'listItem',
@@ -49,12 +58,26 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     TaskList,
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: { resizable: true } }),
+    Details.configure({
+      persist: false,
+      renderToggleButton: ({ element, isOpen, node }) => {
+        const summary = node.firstChild?.textContent.trim() || 'details';
+
+        element.setAttribute(
+          'aria-label',
+          `${isOpen ? 'Collapse' : 'Expand'} details: ${summary}`,
+        );
+      },
+    }),
+    DetailsSummary,
+    DetailsContent,
     Highlight.configure({ multicolor: true }),
     TextStyle,
     Color,
     Subscript,
     Superscript,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    Typography,
     uniqueId,
   ];
 }

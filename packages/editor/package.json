@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@tiptap/core": "3.28.0",
+    "@tiptap/extension-details": "3.28.0",
     "@tiptap/extension-highlight": "3.28.0",
     "@tiptap/extension-list": "3.28.0",
     "@tiptap/extension-subscript": "3.28.0",
@@ -40,6 +41,7 @@
     "@tiptap/extension-table": "3.28.0",
     "@tiptap/extension-text-align": "3.28.0",
     "@tiptap/extension-text-style": "3.28.0",
+    "@tiptap/extension-typography": "3.28.0",
     "@tiptap/extension-unique-id": "3.28.0",
     "@tiptap/pm": "3.28.0",
     "@tiptap/react": "3.28.0",
