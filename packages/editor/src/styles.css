@@ -53,6 +53,41 @@
   padding-inline-start: 1.5rem;
 }
 
+.richer-editor__content ul[data-type='taskList'] {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.richer-editor__content li[data-type='taskItem'] {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.richer-editor__content li[data-type='taskItem'] > label {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.richer-editor__content li[data-type='taskItem'] input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: currentColor;
+}
+
+.richer-editor__content li[data-type='taskItem'] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.richer-editor__content li[data-checked='true'] > div > p {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+
 .richer-editor__content blockquote {
   padding-inline-start: 1rem;
   color: color-mix(in srgb, currentColor 72%, transparent);

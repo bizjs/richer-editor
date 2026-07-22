@@ -217,6 +217,69 @@ describe('normalizeBlockIds', () => {
     expect(new Set(ids)).toHaveLength(11);
     expect(generateId).toHaveBeenCalledTimes(11);
   });
+
+  it('assigns unique IDs to nested task list blocks', () => {
+    let sequence = 0;
+    const generateId = vi.fn(() => `task-block-${(sequence += 1)}`);
+    const normalized = normalizeBlockIds(
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'taskList',
+            content: [
+              {
+                type: 'taskItem',
+                attrs: { checked: false },
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Parent task' }],
+                  },
+                  {
+                    type: 'taskList',
+                    content: [
+                      {
+                        type: 'taskItem',
+                        attrs: { checked: true },
+                        content: [
+                          {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: 'Nested task' }],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { generateId },
+    );
+    const ids: string[] = [];
+
+    function collectIds(node: JSONContent): void {
+      if (typeof node.attrs?.id === 'string') {
+        ids.push(node.attrs.id);
+      }
+
+      node.content?.forEach(collectIds);
+    }
+
+    collectIds(normalized);
+
+    expect(ids).toHaveLength(6);
+    expect(new Set(ids)).toHaveLength(6);
+    expect(generateId).toHaveBeenCalledTimes(6);
+    expect(normalized.content?.[0]?.content?.[0]?.attrs?.checked).toBe(false);
+    expect(
+      normalized.content?.[0]?.content?.[0]?.content?.[1]?.content?.[0]?.attrs
+        ?.checked,
+    ).toBe(true);
+  });
 });
 
 describe('block IDs in editor transactions', () => {

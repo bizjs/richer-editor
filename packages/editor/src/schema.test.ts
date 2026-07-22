@@ -20,6 +20,8 @@ describe('richerSchemaRegistry', () => {
     expect(parsed.toJSON()).toEqual(content);
     expect(richerSchemaRegistry.extensions.map(({ name }) => name)).toEqual([
       'starterKit',
+      'taskList',
+      'taskItem',
       'uniqueID',
     ]);
   });
@@ -136,6 +138,53 @@ describe('richerSchemaRegistry', () => {
                     class: null,
                     title: null,
                   },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('round-trips checked and nested task items', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'taskList',
+          attrs: { id: 'task-list-1' },
+          content: [
+            {
+              type: 'taskItem',
+              attrs: { id: 'task-item-1', checked: false },
+              content: [
+                {
+                  type: 'paragraph',
+                  attrs: { id: 'task-paragraph-1' },
+                  content: [{ type: 'text', text: 'Write tests' }],
+                },
+                {
+                  type: 'taskList',
+                  attrs: { id: 'nested-task-list-1' },
+                  content: [
+                    {
+                      type: 'taskItem',
+                      attrs: { id: 'nested-task-item-1', checked: true },
+                      content: [
+                        {
+                          type: 'paragraph',
+                          attrs: { id: 'nested-task-paragraph-1' },
+                          content: [{ type: 'text', text: 'Confirm Red' }],
+                        },
+                      ],
+                    },
+                  ],
                 },
               ],
             },
