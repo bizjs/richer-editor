@@ -2,6 +2,7 @@
   --richer-background: #ffffff;
   --richer-foreground: #171717;
   --richer-border: #e5e5e5;
+  --richer-highlight-foreground: #171717;
   --richer-radius: 0.5rem;
 
   min-height: 12rem;
@@ -116,6 +117,10 @@
   color: inherit;
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.15em;
+}
+
+.richer-editor__content mark {
+  color: var(--richer-highlight-foreground) !important;
 }
 
 .richer-editor__content hr {

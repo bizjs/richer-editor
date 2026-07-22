@@ -23,6 +23,11 @@ describe('richerSchemaRegistry', () => {
       'taskList',
       'taskItem',
       'tableKit',
+      'highlight',
+      'textStyle',
+      'color',
+      'subscript',
+      'superscript',
       'uniqueID',
     ]);
   });
@@ -141,6 +146,48 @@ describe('richerSchemaRegistry', () => {
                   },
                 },
               ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('round-trips the supported extended inline marks', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'inline-marks-paragraph' },
+          content: [
+            {
+              type: 'text',
+              text: 'highlight',
+              marks: [{ type: 'highlight', attrs: { color: '#fef08a' } }],
+            },
+            { type: 'text', text: ' ' },
+            {
+              type: 'text',
+              text: 'color',
+              marks: [{ type: 'textStyle', attrs: { color: '#2563eb' } }],
+            },
+            { type: 'text', text: 'H' },
+            {
+              type: 'text',
+              text: '2',
+              marks: [{ type: 'subscript' }],
+            },
+            { type: 'text', text: 'O x' },
+            {
+              type: 'text',
+              text: '2',
+              marks: [{ type: 'superscript' }],
             },
           ],
         },
