@@ -1,9 +1,7 @@
 import { getSchema, type Extensions, type JSONContent } from '@tiptap/core';
-import Document from '@tiptap/extension-document';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
 import type { Schema } from '@tiptap/pm/model';
+import StarterKit from '@tiptap/starter-kit';
 
 export interface RicherSchemaRegistry {
   extensions: Extensions;
@@ -16,7 +14,16 @@ export interface NormalizeBlockIdsOptions {
   generateId?: BlockIdGenerator;
 }
 
-const blockNodeTypes = ['paragraph'];
+const blockNodeTypes = [
+  'blockquote',
+  'bulletList',
+  'codeBlock',
+  'heading',
+  'horizontalRule',
+  'listItem',
+  'orderedList',
+  'paragraph',
+];
 
 function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
   const uniqueId = UniqueID.configure({
@@ -24,10 +31,20 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     ...(generateId ? { generateID: generateId } : {}),
   });
 
-  return [Document, Paragraph, Text, uniqueId];
+  return [StarterKit.configure({ trailingNode: false }), uniqueId];
 }
 
 const coreExtensions = createCoreExtensions();
+const coreSchema = getSchema(coreExtensions);
+const coreExtensionNames = new Set([
+  ...coreExtensions.map(({ name }) => name),
+  ...Object.keys(coreSchema.nodes),
+  ...Object.keys(coreSchema.marks),
+  'dropCursor',
+  'gapCursor',
+  'listKeymap',
+  'undoRedo',
+]);
 
 export function normalizeBlockIds(
   content: JSONContent,
@@ -94,9 +111,9 @@ export function createSchemaRegistry(
   additionalExtensions: Extensions = [],
 ): RicherSchemaRegistry {
   const extensions = [...coreExtensions, ...additionalExtensions];
-  const extensionNames = new Set<string>();
+  const extensionNames = new Set(coreExtensionNames);
 
-  for (const extension of extensions) {
+  for (const extension of additionalExtensions) {
     if (extensionNames.has(extension.name)) {
       throw new Error(`Duplicate extension name: ${extension.name}`);
     }

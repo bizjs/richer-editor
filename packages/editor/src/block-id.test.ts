@@ -142,6 +142,81 @@ describe('normalizeBlockIds', () => {
     ]);
     expect(generateId).toHaveBeenCalledTimes(2);
   });
+
+  it('assigns unique IDs to every StarterKit block node', () => {
+    let sequence = 0;
+    const generateId = vi.fn(() => `block-${(sequence += 1)}`);
+    const normalized = normalizeBlockIds(
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'heading',
+            attrs: { level: 2 },
+            content: [{ type: 'text', text: 'Heading' }],
+          },
+          {
+            type: 'blockquote',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: 'Quote' }],
+              },
+            ],
+          },
+          {
+            type: 'bulletList',
+            content: [
+              {
+                type: 'listItem',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Bullet' }],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'orderedList',
+            content: [
+              {
+                type: 'listItem',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Ordered' }],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'codeBlock',
+            content: [{ type: 'text', text: 'const answer = 42' }],
+          },
+          { type: 'horizontalRule' },
+        ],
+      },
+      { generateId },
+    );
+    const ids: string[] = [];
+
+    function collectIds(node: JSONContent): void {
+      if (typeof node.attrs?.id === 'string') {
+        ids.push(node.attrs.id);
+      }
+
+      node.content?.forEach(collectIds);
+    }
+
+    collectIds(normalized);
+
+    expect(ids).toHaveLength(11);
+    expect(new Set(ids)).toHaveLength(11);
+    expect(generateId).toHaveBeenCalledTimes(11);
+  });
 });
 
 describe('block IDs in editor transactions', () => {
