@@ -58,8 +58,8 @@ describe('richerSchemaRegistry', () => {
       content: [{ type: 'unsupportedBlock' }],
     };
 
-    expect(() =>
-      richerSchemaRegistry.schema.nodeFromJSON(content),
-    ).toThrow(/Unknown node type.*unsupportedBlock/);
+    expect(() => richerSchemaRegistry.schema.nodeFromJSON(content)).toThrow(
+      /Unknown node type.*unsupportedBlock/,
+    );
   });
 });

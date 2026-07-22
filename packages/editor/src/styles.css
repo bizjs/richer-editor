@@ -10,10 +10,14 @@
   background: var(--richer-background);
   border: 1px solid var(--richer-border);
   border-radius: var(--richer-radius);
+}
+
+.richer-editor__content {
+  min-height: inherit;
   outline: none;
 }
 
-.richer-editor:focus-visible {
+.richer-editor__content:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }

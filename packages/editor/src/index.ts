@@ -14,7 +14,11 @@ export {
   type RicherExtensionVersions,
   type UnsupportedSchemaVersionError,
 } from './document';
-export { RicherEditor, type RicherEditorProps } from './RicherEditor';
+export {
+  RicherEditor,
+  type RicherEditorChange,
+  type RicherEditorProps,
+} from './RicherEditor';
 export {
   createSchemaRegistry,
   normalizeBlockIds,

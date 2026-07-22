@@ -23,8 +23,7 @@ export interface UnsupportedSchemaVersionError {
 }
 
 export type RicherDocumentError =
-  | InvalidDocumentError
-  | UnsupportedSchemaVersionError;
+  InvalidDocumentError | UnsupportedSchemaVersionError;
 
 export type RicherDocumentValidationResult =
   | { ok: true; document: RicherDocument }
@@ -76,9 +75,7 @@ export function validateDocument(
   return { ok: true, document: input };
 }
 
-export function migrateDocument(
-  input: unknown,
-): RicherDocumentMigrationResult {
+export function migrateDocument(input: unknown): RicherDocumentMigrationResult {
   const validation = validateDocument(input);
 
   if (!validation.ok) {
@@ -122,9 +119,7 @@ function isExtensionVersions(input: unknown): input is RicherExtensionVersions {
 
   return Object.values(input).every(
     (version) =>
-      typeof version === 'number' &&
-      Number.isInteger(version) &&
-      version >= 0,
+      typeof version === 'number' && Number.isInteger(version) && version >= 0,
   );
 }
 

@@ -136,9 +136,10 @@ describe('normalizeBlockIds', () => {
 
     const normalized = normalizeBlockIds(content, { generateId });
 
-    expect(
-      normalized.content?.map((block) => block.attrs?.id),
-    ).toEqual(['block-existing', 'block-new']);
+    expect(normalized.content?.map((block) => block.attrs?.id)).toEqual([
+      'block-existing',
+      'block-new',
+    ]);
     expect(generateId).toHaveBeenCalledTimes(2);
   });
 });
@@ -199,17 +200,14 @@ describe('block IDs in editor transactions', () => {
       const firstBlock = editor.state.doc.child(0);
       const secondBlock = editor.state.doc.child(1);
       const moveSecondBlock = editor.state.tr
-        .delete(
-          firstBlock.nodeSize,
-          firstBlock.nodeSize + secondBlock.nodeSize,
-        )
+        .delete(firstBlock.nodeSize, firstBlock.nodeSize + secondBlock.nodeSize)
         .insert(0, secondBlock);
 
       editor.view.dispatch(moveSecondBlock);
 
-      expect(
-        editor.getJSON().content?.map((block) => block.attrs?.id),
-      ).toEqual(['block-second', 'block-first']);
+      expect(editor.getJSON().content?.map((block) => block.attrs?.id)).toEqual(
+        ['block-second', 'block-first'],
+      );
     } finally {
       editor.destroy();
     }
@@ -242,7 +240,7 @@ describe('block IDs in editor transactions', () => {
       });
 
       editor.view.someProp('transformPasted', (transformPasted) => {
-        pastedSlice = transformPasted(pastedSlice, editor.view);
+        pastedSlice = transformPasted(pastedSlice, editor.view, false);
       });
 
       editor.view.dispatch(
