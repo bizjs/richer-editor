@@ -22,6 +22,7 @@ describe('richerSchemaRegistry', () => {
       'starterKit',
       'taskList',
       'taskItem',
+      'tableKit',
       'uniqueID',
     ]);
   });
@@ -183,6 +184,88 @@ describe('richerSchemaRegistry', () => {
                           content: [{ type: 'text', text: 'Confirm Red' }],
                         },
                       ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('round-trips table headers, cells, spans, and column widths', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'table',
+          attrs: { id: 'table-1' },
+          content: [
+            {
+              type: 'tableRow',
+              attrs: { id: 'table-row-1' },
+              content: [
+                {
+                  type: 'tableHeader',
+                  attrs: {
+                    id: 'table-header-1',
+                    colspan: 1,
+                    rowspan: 1,
+                    colwidth: [160],
+                    align: null,
+                  },
+                  content: [
+                    {
+                      type: 'paragraph',
+                      attrs: { id: 'table-header-paragraph-1' },
+                      content: [{ type: 'text', text: 'Name' }],
+                    },
+                  ],
+                },
+                {
+                  type: 'tableHeader',
+                  attrs: {
+                    id: 'table-header-2',
+                    colspan: 1,
+                    rowspan: 1,
+                    colwidth: [200],
+                    align: null,
+                  },
+                  content: [
+                    {
+                      type: 'paragraph',
+                      attrs: { id: 'table-header-paragraph-2' },
+                      content: [{ type: 'text', text: 'Status' }],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'tableRow',
+              attrs: { id: 'table-row-2' },
+              content: [
+                {
+                  type: 'tableCell',
+                  attrs: {
+                    id: 'table-cell-1',
+                    colspan: 2,
+                    rowspan: 1,
+                    colwidth: [160, 200],
+                    align: null,
+                  },
+                  content: [
+                    {
+                      type: 'paragraph',
+                      attrs: { id: 'table-cell-paragraph-1' },
+                      content: [{ type: 'text', text: 'Merged cell' }],
                     },
                   ],
                 },

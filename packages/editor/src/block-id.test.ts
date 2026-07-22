@@ -280,6 +280,77 @@ describe('normalizeBlockIds', () => {
         ?.checked,
     ).toBe(true);
   });
+
+  it('assigns unique IDs to table containers, rows, and cells', () => {
+    let sequence = 0;
+    const generateId = vi.fn(() => `table-block-${(sequence += 1)}`);
+    const normalized = normalizeBlockIds(
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'table',
+            content: [
+              {
+                type: 'tableRow',
+                content: [
+                  {
+                    type: 'tableHeader',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'Name' }],
+                      },
+                    ],
+                  },
+                  {
+                    type: 'tableHeader',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'Status' }],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: 'tableRow',
+                content: [
+                  {
+                    type: 'tableCell',
+                    attrs: { colspan: 2, rowspan: 1, colwidth: null },
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'Merged cell' }],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { generateId },
+    );
+    const ids: string[] = [];
+
+    function collectIds(node: JSONContent): void {
+      if (typeof node.attrs?.id === 'string') {
+        ids.push(node.attrs.id);
+      }
+
+      node.content?.forEach(collectIds);
+    }
+
+    collectIds(normalized);
+
+    expect(ids).toHaveLength(9);
+    expect(new Set(ids)).toHaveLength(9);
+    expect(generateId).toHaveBeenCalledTimes(9);
+  });
 });
 
 describe('block IDs in editor transactions', () => {

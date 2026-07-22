@@ -1,5 +1,6 @@
 import { getSchema, type Extensions, type JSONContent } from '@tiptap/core';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
+import { TableKit } from '@tiptap/extension-table';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
 import type { Schema } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
@@ -26,6 +27,10 @@ const blockNodeTypes = [
   'paragraph',
   'taskItem',
   'taskList',
+  'table',
+  'tableCell',
+  'tableHeader',
+  'tableRow',
 ];
 
 function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
@@ -38,6 +43,7 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     StarterKit.configure({ trailingNode: false }),
     TaskList,
     TaskItem.configure({ nested: true }),
+    TableKit.configure({ table: { resizable: true } }),
     uniqueId,
   ];
 }
