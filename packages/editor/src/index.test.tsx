@@ -89,6 +89,61 @@ describe('RicherEditor public component', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows a custom placeholder in an empty editable document', () => {
+    render(<RicherEditor placeholder="Start a document" />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const emptyParagraph = editor.querySelector('p');
+
+    expect(emptyParagraph).toHaveClass('is-editor-empty');
+    expect(emptyParagraph).toHaveAttribute(
+      'data-placeholder',
+      'Start a document',
+    );
+  });
+
+  it('updates the placeholder without rebuilding the editor', () => {
+    const { rerender } = render(<RicherEditor placeholder="First prompt" />);
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const emptyParagraph = editor.querySelector('p');
+
+    rerender(<RicherEditor placeholder="Second prompt" />);
+
+    expect(emptyParagraph).toHaveAttribute('data-placeholder', 'Second prompt');
+  });
+
+  it('does not show a placeholder in a non-empty document', () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('Existing content', 'block-existing')}
+        placeholder="Start a document"
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const paragraph = editor.querySelector('p');
+
+    expect(paragraph).not.toHaveClass('is-editor-empty');
+    expect(paragraph).not.toHaveAttribute('data-placeholder');
+  });
+
+  it('does not show a placeholder in a read-only empty document', () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'block-read-only')}
+        editable={false}
+        placeholder="Start a document"
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const paragraph = editor.querySelector('p');
+
+    expect(editor).toHaveAttribute('aria-readonly', 'true');
+    expect(paragraph).not.toHaveClass('is-editor-empty');
+    expect(paragraph).not.toHaveAttribute('data-placeholder');
+  });
+
   it('gives a details toggle an accessible name from its summary', () => {
     render(<RicherEditor defaultDocument={makeDetailsDocument()} />);
 

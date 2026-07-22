@@ -13,6 +13,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import Typography from '@tiptap/extension-typography';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
+import { Placeholder } from '@tiptap/extensions/placeholder';
 import type { Schema } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -78,6 +79,7 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     Superscript,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     Typography,
+    Placeholder,
     uniqueId,
   ];
 }

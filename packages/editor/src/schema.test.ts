@@ -38,6 +38,7 @@ describe('richerSchemaRegistry', () => {
       'superscript',
       'textAlign',
       'typography',
+      'placeholder',
       'uniqueID',
     ]);
   });

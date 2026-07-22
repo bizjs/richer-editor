@@ -1,4 +1,5 @@
 import { EditorContent, useEditor } from '@tiptap/react';
+import { Placeholder } from '@tiptap/extensions/placeholder';
 import { Selection } from '@tiptap/pm/state';
 import { useEffect, useRef, type HTMLAttributes } from 'react';
 
@@ -20,6 +21,7 @@ interface RicherEditorSharedProps extends Omit<
   'aria-label'?: string;
   editable?: boolean;
   onChange?: (change: RicherEditorChange) => void;
+  placeholder?: string;
 }
 
 interface RicherEditorControlledProps extends RicherEditorSharedProps {
@@ -49,6 +51,7 @@ export function RicherEditor({
   document,
   editable = true,
   onChange,
+  placeholder = 'Start writing…',
   ...props
 }: RicherEditorProps) {
   const isControlled = document !== undefined;
@@ -65,8 +68,24 @@ export function RicherEditor({
   );
   const currentDocumentRef = useRef(initialDocumentRef.current);
   const onChangeRef = useRef(onChange);
+  const placeholderRef = useRef(placeholder);
+  const editorExtensionsRef = useRef<
+    typeof richerSchemaRegistry.extensions | null
+  >(null);
 
   onChangeRef.current = onChange;
+  placeholderRef.current = placeholder;
+
+  if (!editorExtensionsRef.current) {
+    editorExtensionsRef.current = richerSchemaRegistry.extensions.map(
+      (extension) =>
+        extension.name === 'placeholder'
+          ? Placeholder.configure({
+              placeholder: () => placeholderRef.current,
+            })
+          : extension,
+    );
+  }
 
   if (document) {
     currentDocumentRef.current = document;
@@ -84,7 +103,7 @@ export function RicherEditor({
           role: 'textbox',
         },
       },
-      extensions: richerSchemaRegistry.extensions,
+      extensions: editorExtensionsRef.current,
       onUpdate: ({ editor: updatedEditor }) => {
         const nextDocument: RicherDocument = {
           ...currentDocumentRef.current,

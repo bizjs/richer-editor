@@ -27,3 +27,5 @@ Typography 输入规则默认启用，可在编辑时将 `--`、`...`、`->` 等
 `RicherEditor` 支持 `document + onChange` 受控模式和 `defaultDocument` 非受控模式。`onChange` 返回包含最新内容的完整 `RicherDocument`。
 
 组件挂载后不得在受控与非受控模式之间切换。外部受控更新不会再次触发 `onChange`，不会进入撤销历史，并在新文档允许时保持原选区位置。
+
+`placeholder` 用于配置空白写作提示，默认为 `Start writing…`。提示只在空的可编辑文档中显示，属性更新不会重建编辑器；占位文案属于界面装饰，不进入 `RicherDocument`。

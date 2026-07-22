@@ -31,6 +31,14 @@
   margin-bottom: 0;
 }
 
+.richer-editor__content p.is-editor-empty:first-child::before {
+  float: left;
+  height: 0;
+  color: color-mix(in srgb, currentColor 52%, transparent);
+  pointer-events: none;
+  content: attr(data-placeholder);
+}
+
 .richer-editor__content h1,
 .richer-editor__content h2,
 .richer-editor__content h3,
