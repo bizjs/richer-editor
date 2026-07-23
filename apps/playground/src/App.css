@@ -1,67 +1,62 @@
 .playground-shell {
-  width: min(calc(100% - 2rem), 72rem);
-  margin: 0 auto;
-  padding: 3rem 0;
-}
-
-.playground-header {
-  margin-bottom: 1.5rem;
-}
-
-.playground-header h1 {
-  margin: 0;
-  font-size: clamp(1.75rem, 5vw, 2.5rem);
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-
-.playground-header p,
-.playground-panel-header p {
-  margin: 0;
-  color: var(--playground-muted);
-  line-height: 1.5;
-}
-
-.playground-header p {
-  margin-top: 0.5rem;
-}
-
-.playground-grid {
-  display: grid;
-  gap: 1rem;
-}
-
-.playground-panel {
-  min-width: 0;
-  padding: 1rem;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--playground-panel);
-  border: 1px solid var(--playground-border);
-  border-radius: 0.75rem;
 }
 
-.playground-panel-header {
+.playground-document-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  min-height: 4rem;
+  padding: 0.625rem clamp(1rem, 3vw, 2.5rem);
+  background: color-mix(in srgb, var(--playground-panel) 96%, transparent);
+  border-bottom: 1px solid var(--playground-border);
 }
 
-.playground-panel-header h2 {
-  margin: 0 0 0.25rem;
+.playground-document-meta,
+.playground-controls,
+.playground-save-status {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.playground-document-meta {
+  min-width: 0;
+}
+
+.playground-document-meta strong {
+  flex: none;
   font-size: 1rem;
-  line-height: 1.5;
 }
 
-.playground-panel-header p {
-  font-size: 0.875rem;
+.playground-document-meta > span:not(.playground-save-status) {
+  color: var(--playground-muted);
+}
+
+.playground-save-status {
+  gap: 0.375rem;
+  color: var(--playground-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.playground-save-status > span {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--playground-success);
+  border-radius: 999px;
 }
 
 .playground-controls {
-  display: flex;
   flex: none;
   gap: 0.5rem;
-  align-items: center;
 }
 
 .playground-toggle,
@@ -91,17 +86,17 @@
 
 .playground-controls button {
   padding: 0 1rem;
-  color: var(--playground-button-foreground);
+  color: var(--playground-foreground);
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;
-  background: var(--playground-button);
-  border: 1px solid var(--playground-button);
+  background: transparent;
+  border: 1px solid var(--playground-border);
 }
 
 .playground-toggle:hover,
 .playground-controls button:hover {
-  filter: brightness(0.94);
+  background: color-mix(in srgb, var(--playground-foreground) 6%, transparent);
 }
 
 .playground-toggle:focus-within,
@@ -110,48 +105,256 @@
   outline-offset: 2px;
 }
 
+.playground-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  padding: 0.625rem clamp(1rem, 3vw, 2.5rem);
+  color: var(--playground-muted);
+  background: var(--playground-subtle);
+  border-bottom: 1px solid var(--playground-border);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.playground-shortcuts strong {
+  color: var(--playground-foreground);
+}
+
+.playground-shortcuts kbd {
+  padding: 0.125rem 0.375rem;
+  color: var(--playground-foreground);
+  background: var(--playground-panel);
+  border: 1px solid var(--playground-border);
+  border-bottom-width: 2px;
+  border-radius: 0.25rem;
+  font: inherit;
+  font-weight: 600;
+}
+
+.playground-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(13rem, 17rem);
+  width: min(100%, 90rem);
+  min-height: calc(100dvh - 7rem);
+  margin: 0 auto;
+}
+
+.playground-document-pane {
+  min-width: 0;
+  border-right: 1px solid var(--playground-border);
+}
+
 .playground-editor {
-  --richer-background: var(--playground-editor);
+  --richer-background: var(--playground-panel);
   --richer-foreground: var(--playground-foreground);
   --richer-border: var(--playground-border);
+  --richer-radius: 0.5rem;
+
+  min-height: inherit;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.playground-editor .richer-editor__toolbar {
+  position: sticky;
+  top: 4rem;
+  z-index: 30;
+  margin: 0;
+  padding: 0.5rem clamp(1rem, 4vw, 3rem);
+  background: color-mix(in srgb, var(--playground-panel) 96%, transparent);
+}
+
+.playground-editor .richer-editor__focus-toggle {
+  margin: 1rem max(1rem, calc((100% - 48rem) / 2));
+}
+
+.playground-editor .richer-editor__search {
+  width: min(calc(100% - 2rem), 48rem);
+  margin: 1rem auto 0;
+}
+
+.playground-editor .richer-editor__body {
+  width: min(calc(100% - 2rem), 48rem);
+  min-height: 60rem;
+  margin: 0 auto;
+}
+
+.playground-editor .richer-editor__content {
+  padding: clamp(2.5rem, 7vw, 5rem) clamp(0.25rem, 4vw, 2rem) 12rem;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.playground-editor .richer-editor__content > h1:first-child {
+  margin-top: 0;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  letter-spacing: -0.035em;
+}
+
+.playground-editor .richer-editor__content h2 {
+  margin-top: 2.5em;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+}
+
+.playground-sidebar {
+  align-self: start;
+  min-width: 0;
+  padding: 4.75rem 1.5rem 3rem;
+}
+
+.playground-sidebar nav {
+  position: sticky;
+  top: 9rem;
+}
+
+.playground-sidebar h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.playground-outline {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid var(--playground-border);
+  list-style: none;
+}
+
+.playground-outline li {
+  padding: 0.375rem 0;
+  color: var(--playground-muted);
+  line-height: 1.45;
+}
+
+.playground-outline-level-1 {
+  color: var(--playground-foreground) !important;
+  font-weight: 700;
+}
+
+.playground-outline-level-2 {
+  padding-inline-start: 0.75rem !important;
+}
+
+.playground-outline-level-3 {
+  padding-inline-start: 1.5rem !important;
+  font-size: 0.875rem;
+}
+
+.playground-empty-state,
+.playground-inspector > p {
+  color: var(--playground-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.playground-inspector {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--playground-border);
+}
+
+.playground-inspector summary {
+  min-height: 2.75rem;
+  color: var(--playground-foreground);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 2.75rem;
+}
+
+.playground-inspector summary:focus-visible {
+  outline: 2px solid var(--playground-accent);
+  outline-offset: 2px;
 }
 
 .playground-document {
-  min-height: 12rem;
+  max-height: 28rem;
   margin: 0;
-  padding: 1rem;
+  padding: 0.75rem;
   color: var(--playground-code-foreground);
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  overflow: auto;
+  white-space: pre;
   background: var(--playground-code);
   border-radius: 0.5rem;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   line-height: 1.6;
 }
 
-@media (min-width: 60rem) {
-  .playground-grid {
-    grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
-    align-items: start;
+@media (max-width: 56rem) {
+  .playground-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .playground-document-pane {
+    border-right: 0;
+  }
+
+  .playground-sidebar {
+    padding: 2rem 1rem;
+    border-top: 1px solid var(--playground-border);
+  }
+
+  .playground-sidebar nav {
+    position: static;
   }
 }
 
-@media (max-width: 39.99rem) {
-  .playground-shell {
-    padding: 1.5rem 0;
+@media (max-width: 40rem) {
+  .playground-document-bar {
+    position: static;
+    align-items: flex-start;
   }
 
-  .playground-panel-header {
-    flex-direction: column;
+  .playground-document-meta {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .playground-save-status {
+    grid-column: 1 / -1;
+  }
+
+  .playground-document-meta > span:not(.playground-save-status) {
+    display: none;
   }
 
   .playground-controls {
-    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .playground-toggle,
   .playground-controls button {
-    justify-content: center;
-    width: 100%;
+    min-width: 2.75rem;
+    padding-inline: 0.625rem;
+  }
+
+  .playground-shortcuts {
+    display: grid;
+  }
+
+  .playground-editor .richer-editor__toolbar {
+    top: 0;
+    padding-inline: 0.5rem;
+  }
+
+  .playground-editor .richer-editor__body {
+    width: min(calc(100% - 1.5rem), 48rem);
+  }
+
+  .playground-editor .richer-editor__content {
+    padding-top: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playground-toggle,
+  .playground-controls button {
+    transition: none;
   }
 }

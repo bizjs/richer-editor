@@ -7,9 +7,9 @@
   --playground-muted: #64748b;
   --playground-border: #cbd5e1;
   --playground-accent: #2563eb;
-  --playground-button: #1e293b;
-  --playground-button-foreground: #ffffff;
   --playground-code-foreground: #e2e8f0;
+  --playground-subtle: #f8fafc;
+  --playground-success: #16a34a;
 
   color: var(--playground-foreground);
   background: var(--playground-background);
@@ -40,8 +40,8 @@ body {
     --playground-muted: #94a3b8;
     --playground-border: #334155;
     --playground-accent: #60a5fa;
-    --playground-button: #f8fafc;
-    --playground-button-foreground: #0f172a;
     --playground-code-foreground: #e2e8f0;
+    --playground-subtle: #111827;
+    --playground-success: #4ade80;
   }
 }
