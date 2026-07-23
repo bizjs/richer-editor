@@ -4,13 +4,17 @@ Richer Editor 的可发布核心包。项目处于 `0.1.0` 开发阶段，公开
 
 ## Schema
 
-`richerSchemaRegistry` 使用 Tiptap StarterKit，并默认关闭 `TrailingNode`。当前包含标题、引用、代码块、分隔线、普通列表、可嵌套任务列表、Details、支持列宽调整的表格、链接，以及粗体、斜体、下划线、删除线、行内代码、多色高亮、文字颜色、上标、下标和文本对齐等格式。
+`richerSchemaRegistry` 使用 Tiptap StarterKit，并默认关闭 `TrailingNode`。当前包含标题、引用、Callout、带语法高亮的代码块、分隔线、普通列表、可嵌套任务列表、Details、支持列宽调整的表格、链接，以及粗体、斜体、下划线、删除线、行内代码、多色高亮、文字颜色、上标、下标和文本对齐等格式。
+
+代码块使用 CodeBlockLowlight 和 lowlight `common` 语言集合。已注册语言按声明的 `language` 高亮，未知或未声明语言使用自动检测；原始语言属性与代码文本仍是 JSON 的权威内容。
 
 文字颜色只注册 `TextStyle` 和 `Color`。核心 schema 不包含字体、字号、行高或任意内联样式，避免文档绕过统一排版约束。
 
 文本对齐只作用于标题和段落，支持左对齐、居中、右对齐和两端对齐。未设置时规范化为 `textAlign: null`。
 
 Details 的容器、摘要和内容均持久化稳定 `id`。展开状态属于编辑界面状态，不写入 RicherDocument；切换按钮使用摘要生成可访问名称。
+
+Callout 使用 `info`、`tip`、`warn`、`danger` 四种变体，未声明时默认为 `info`。外层 Callout 和内部块均持久化稳定 `id`；编辑状态下可通过信息块左侧的类型按钮循环切换变体，只读状态下该按钮禁用。`CALLOUT_VARIANTS` 和 `CalloutVariant` 可用于宿主侧约束变体值。
 
 Typography 输入规则默认启用，可在编辑时将 `--`、`...`、`->` 等常见字符组合转换为对应的排版字符。转换结果以普通文本持久化，不增加额外的 JSON 节点或 mark。
 
@@ -29,3 +33,9 @@ Typography 输入规则默认启用，可在编辑时将 `--`、`...`、`->` 等
 组件挂载后不得在受控与非受控模式之间切换。外部受控更新不会再次触发 `onChange`，不会进入撤销历史，并在新文档允许时保持原选区位置。
 
 `placeholder` 用于配置空白写作提示，默认为 `Start writing…`。提示只在空的可编辑文档中显示，属性更新不会重建编辑器；占位文案属于界面装饰，不进入 `RicherDocument`。
+
+`onCharacterCountChange` 在编辑器创建、本地内容编辑和受控文档替换后报告 `{ characters, words }`。计数使用 Tiptap CharacterCount 的默认文本模式，不设置输入上限，也不改变 `RicherDocument`。
+
+通过 `features={{ toolbar: true }}` 启用固定工具栏。当前提供粗体、斜体、下划线、删除线、行内代码、清除行内格式、二级标题、无序列表、有序列表、任务列表、引用、Callout 和代码块；切换按钮使用 `aria-pressed` 表示当前状态，只读模式下所有工具栏操作均禁用。
+
+通过 `features={{ bubbleMenu: true }}` 启用选区格式菜单。菜单只在可编辑器内存在非空文本选区时显示，提供粗体、斜体、下划线和行内代码；失焦或切换到只读模式后自动隐藏。

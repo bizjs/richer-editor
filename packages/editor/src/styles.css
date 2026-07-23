@@ -13,6 +13,67 @@
   border-radius: var(--richer-radius);
 }
 
+.richer-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  margin: -0.5rem -0.5rem 0.75rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--richer-border);
+}
+
+.richer-editor__toolbar button,
+.richer-editor__bubble-menu button {
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--richer-radius) * 0.625);
+}
+
+.richer-editor__toolbar button:hover:not(:disabled),
+.richer-editor__bubble-menu button:hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.richer-editor__toolbar button[aria-pressed='true'],
+.richer-editor__bubble-menu button[aria-pressed='true'] {
+  color: var(--richer-background);
+  background: var(--richer-foreground);
+  border-color: var(--richer-foreground);
+}
+
+.richer-editor__toolbar button:focus-visible,
+.richer-editor__bubble-menu button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.richer-editor__toolbar button:disabled,
+.richer-editor__bubble-menu button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.richer-editor__bubble-menu {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.375rem;
+  color: var(--richer-foreground);
+  background: var(--richer-background);
+  border: 1px solid var(--richer-border);
+  border-radius: var(--richer-radius);
+  box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.richer-editor__body {
+  min-height: inherit;
+}
+
 .richer-editor__content {
   min-height: inherit;
   outline: none;
@@ -157,6 +218,69 @@
   margin-bottom: 0;
 }
 
+.richer-editor__content [data-type='callout'] {
+  --richer-callout-color: #2563eb;
+
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0.75em 0;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--richer-callout-color) 10%, transparent);
+  border-inline-start: 0.25rem solid var(--richer-callout-color);
+  border-radius: calc(var(--richer-radius) * 0.75);
+}
+
+.richer-editor__content [data-type='callout'][data-variant='tip'] {
+  --richer-callout-color: #15803d;
+}
+
+.richer-editor__content [data-type='callout'][data-variant='warn'] {
+  --richer-callout-color: #b45309;
+}
+
+.richer-editor__content [data-type='callout'][data-variant='danger'] {
+  --richer-callout-color: #b91c1c;
+}
+
+.richer-editor__callout-style {
+  display: inline-grid;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--richer-callout-color);
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.richer-editor__callout-style:disabled {
+  cursor: default;
+}
+
+.richer-editor__callout-style:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.richer-editor__callout-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.richer-editor__callout-content > :first-child {
+  margin-top: 0;
+}
+
+.richer-editor__callout-content > :last-child {
+  margin-bottom: 0;
+}
+
 .richer-editor__content blockquote {
   padding-inline-start: 1rem;
   color: color-mix(in srgb, currentColor 72%, transparent);
@@ -173,6 +297,43 @@
 .richer-editor__content code {
   font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 0.875em;
+}
+
+.richer-editor__content .hljs-comment,
+.richer-editor__content .hljs-quote {
+  color: color-mix(in srgb, currentColor 58%, transparent);
+  font-style: italic;
+}
+
+.richer-editor__content .hljs-keyword,
+.richer-editor__content .hljs-selector-tag,
+.richer-editor__content .hljs-literal {
+  color: color-mix(in srgb, currentColor 72%, #7c3aed);
+  font-weight: 600;
+}
+
+.richer-editor__content .hljs-string,
+.richer-editor__content .hljs-attr,
+.richer-editor__content .hljs-addition {
+  color: color-mix(in srgb, currentColor 72%, #059669);
+}
+
+.richer-editor__content .hljs-number,
+.richer-editor__content .hljs-symbol,
+.richer-editor__content .hljs-bullet {
+  color: color-mix(in srgb, currentColor 72%, #d97706);
+}
+
+.richer-editor__content .hljs-title,
+.richer-editor__content .hljs-name,
+.richer-editor__content .hljs-type,
+.richer-editor__content .hljs-built_in {
+  color: color-mix(in srgb, currentColor 72%, #0284c7);
+}
+
+.richer-editor__content .hljs-meta,
+.richer-editor__content .hljs-deletion {
+  color: color-mix(in srgb, currentColor 72%, #dc2626);
 }
 
 .richer-editor__content :not(pre) > code {

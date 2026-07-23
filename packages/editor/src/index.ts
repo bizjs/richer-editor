@@ -1,5 +1,6 @@
 import './styles.css';
 
+export { CALLOUT_VARIANTS, type CalloutVariant } from './callout-variants';
 export {
   CURRENT_SCHEMA_VERSION,
   createDocument,
@@ -16,7 +17,9 @@ export {
 } from './document';
 export {
   RicherEditor,
+  type RicherEditorCharacterCount,
   type RicherEditorChange,
+  type RicherEditorFeatures,
   type RicherEditorProps,
 } from './RicherEditor';
 export {

@@ -397,6 +397,47 @@ describe('normalizeBlockIds', () => {
     expect(new Set(ids)).toHaveLength(4);
     expect(generateId).toHaveBeenCalledTimes(4);
   });
+
+  it('assigns unique IDs to a callout and its nested blocks', () => {
+    let sequence = 0;
+    const generateId = vi.fn(() => `callout-block-${(sequence += 1)}`);
+    const normalized = normalizeBlockIds(
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'callout',
+            attrs: { variant: 'tip' },
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: 'Useful information' }],
+              },
+            ],
+          },
+        ],
+      },
+      { generateId },
+    );
+
+    expect(normalized).toEqual({
+      type: 'doc',
+      content: [
+        {
+          type: 'callout',
+          attrs: { id: 'callout-block-1', variant: 'tip' },
+          content: [
+            {
+              type: 'paragraph',
+              attrs: { id: 'callout-block-2', textAlign: null },
+              content: [{ type: 'text', text: 'Useful information' }],
+            },
+          ],
+        },
+      ],
+    });
+    expect(generateId).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('block IDs in editor transactions', () => {

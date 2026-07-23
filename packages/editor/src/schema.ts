@@ -1,4 +1,5 @@
 import { getSchema, type Extensions, type JSONContent } from '@tiptap/core';
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import {
   Details,
   DetailsContent,
@@ -13,9 +14,13 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
 import Typography from '@tiptap/extension-typography';
 import { generateUniqueIds, UniqueID } from '@tiptap/extension-unique-id';
+import { CharacterCount } from '@tiptap/extensions/character-count';
 import { Placeholder } from '@tiptap/extensions/placeholder';
 import type { Schema } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
+import { common, createLowlight } from 'lowlight';
+
+import { Callout } from './callout';
 
 export interface RicherSchemaRegistry {
   extensions: Extensions;
@@ -28,9 +33,12 @@ export interface NormalizeBlockIdsOptions {
   generateId?: BlockIdGenerator;
 }
 
+const lowlight = createLowlight(common);
+
 const blockNodeTypes = [
   'blockquote',
   'bulletList',
+  'callout',
   'codeBlock',
   'details',
   'detailsContent',
@@ -55,10 +63,12 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
   });
 
   return [
-    StarterKit.configure({ trailingNode: false }),
+    StarterKit.configure({ codeBlock: false, trailingNode: false }),
+    CodeBlockLowlight.configure({ lowlight }),
     TaskList,
     TaskItem.configure({ nested: true }),
     TableKit.configure({ table: { resizable: true } }),
+    Callout,
     Details.configure({
       persist: false,
       renderToggleButton: ({ element, isOpen, node }) => {
@@ -80,6 +90,7 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     Typography,
     Placeholder,
+    CharacterCount,
     uniqueId,
   ];
 }

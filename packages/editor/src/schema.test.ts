@@ -1,4 +1,5 @@
 import { Extension } from '@tiptap/core';
+import { DOMParser as ProseMirrorDOMParser } from '@tiptap/pm/model';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -25,9 +26,11 @@ describe('richerSchemaRegistry', () => {
     expect(parsed.toJSON()).toEqual(content);
     expect(richerSchemaRegistry.extensions.map(({ name }) => name)).toEqual([
       'starterKit',
+      'codeBlock',
       'taskList',
       'taskItem',
       'tableKit',
+      'callout',
       'details',
       'detailsSummary',
       'detailsContent',
@@ -39,6 +42,7 @@ describe('richerSchemaRegistry', () => {
       'textAlign',
       'typography',
       'placeholder',
+      'characterCount',
       'uniqueID',
     ]);
   });
@@ -59,6 +63,87 @@ describe('richerSchemaRegistry', () => {
 
     parsed.check();
     expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('round-trips a callout with its stable block ID and variant', () => {
+    const content: JSONContent = {
+      type: 'doc',
+      content: [
+        {
+          type: 'callout',
+          attrs: { id: 'callout-1', variant: 'warn' },
+          content: [
+            {
+              type: 'paragraph',
+              attrs: { id: 'callout-paragraph-1', textAlign: null },
+              content: [{ type: 'text', text: 'Check this first.' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON(content);
+
+    parsed.check();
+    expect(parsed.toJSON()).toEqual(content);
+  });
+
+  it('uses the info variant when a callout omits its variant', () => {
+    const parsed = richerSchemaRegistry.schema.nodeFromJSON({
+      type: 'doc',
+      content: [
+        {
+          type: 'callout',
+          attrs: { id: 'callout-default' },
+          content: [
+            {
+              type: 'paragraph',
+              attrs: { id: 'callout-default-paragraph', textAlign: null },
+            },
+          ],
+        },
+      ],
+    });
+
+    parsed.check();
+    expect(parsed.toJSON().content?.[0]?.attrs).toEqual({
+      id: 'callout-default',
+      variant: 'info',
+    });
+  });
+
+  it('rejects callout JSON with an unsupported variant', () => {
+    expect(() =>
+      richerSchemaRegistry.schema.nodeFromJSON({
+        type: 'doc',
+        content: [
+          {
+            type: 'callout',
+            attrs: { id: 'callout-invalid', variant: 'unknown' },
+            content: [
+              {
+                type: 'paragraph',
+                attrs: { id: 'callout-invalid-paragraph', textAlign: null },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow('Unsupported callout variant: unknown');
+  });
+
+  it('falls back to info when imported callout HTML has an unsupported variant', () => {
+    const container = document.createElement('div');
+
+    container.innerHTML =
+      '<div data-type="callout" data-variant="unknown"><p>Imported</p></div>';
+
+    const parsed = ProseMirrorDOMParser.fromSchema(
+      richerSchemaRegistry.schema,
+    ).parse(container);
+
+    expect(parsed.firstChild?.attrs.variant).toBe('info');
   });
 
   it('round-trips StarterKit blocks and inline marks', () => {
@@ -135,7 +220,7 @@ describe('richerSchemaRegistry', () => {
         },
         {
           type: 'codeBlock',
-          attrs: { id: 'code-block-1', language: null },
+          attrs: { id: 'code-block-1', language: 'javascript' },
           content: [{ type: 'text', text: 'const answer = 42' }],
         },
         { type: 'horizontalRule', attrs: { id: 'rule-1' } },
