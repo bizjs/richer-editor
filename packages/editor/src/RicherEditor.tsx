@@ -18,6 +18,7 @@ import {
   type RicherDocument,
 } from './document';
 import { RicherEditorEditableContext } from './editor-context';
+import { FocusMode } from './focus-mode';
 import { richerSchemaRegistry } from './schema';
 import { Search, searchPluginKey } from './search';
 
@@ -32,6 +33,7 @@ export interface RicherEditorCharacterCount {
 
 export interface RicherEditorFeatures {
   bubbleMenu?: boolean;
+  focusMode?: boolean;
   search?: boolean;
   slashMenu?: boolean;
   toolbar?: boolean;
@@ -73,6 +75,52 @@ function createEmptyEditorDocument(): RicherDocument {
   return createDocument({
     type: 'doc',
     content: [{ type: 'paragraph' }],
+  });
+}
+
+function getVerticalScrollContainer(element: HTMLElement): HTMLElement | null {
+  let candidate = element.parentElement;
+
+  while (candidate && candidate !== document.body) {
+    const { overflowY } = window.getComputedStyle(candidate);
+
+    if (
+      /(auto|overlay|scroll)/.test(overflowY) &&
+      candidate.scrollHeight > candidate.clientHeight
+    ) {
+      return candidate;
+    }
+
+    candidate = candidate.parentElement;
+  }
+
+  return null;
+}
+
+function centerEditorSelection(editor: Editor): void {
+  const coordinates = editor.view.coordsAtPos(editor.state.selection.head);
+  const scrollContainer = getVerticalScrollContainer(editor.view.dom);
+  const behavior: ScrollBehavior = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches
+    ? 'auto'
+    : 'smooth';
+
+  if (scrollContainer) {
+    const containerRect = scrollContainer.getBoundingClientRect();
+
+    scrollContainer.scrollBy({
+      behavior,
+      top:
+        coordinates.top -
+        (containerRect.top + scrollContainer.clientHeight * 0.4),
+    });
+    return;
+  }
+
+  window.scrollBy({
+    behavior,
+    top: coordinates.top - window.innerHeight * 0.4,
   });
 }
 
@@ -438,7 +486,7 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          Bold
+          <strong aria-hidden="true">B</strong>
         </button>
         <button
           aria-label="Italic"
@@ -448,7 +496,7 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          Italic
+          <em aria-hidden="true">I</em>
         </button>
         <button
           aria-label="Underline"
@@ -458,7 +506,9 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          Underline
+          <span className="richer-editor__toolbar-underline" aria-hidden="true">
+            U
+          </span>
         </button>
         <button
           aria-label="Inline code"
@@ -468,7 +518,9 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          Inline code
+          <span className="richer-editor__toolbar-code" aria-hidden="true">
+            {'</>'}
+          </span>
         </button>
       </div>
     </BubbleMenu>
@@ -528,7 +580,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Bold
+        <strong aria-hidden="true">B</strong>
       </button>
       <button
         aria-label="Italic"
@@ -538,7 +590,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Italic
+        <em aria-hidden="true">I</em>
       </button>
       <button
         aria-label="Underline"
@@ -548,7 +600,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Underline
+        <span className="richer-editor__toolbar-underline" aria-hidden="true">
+          U
+        </span>
       </button>
       <button
         aria-label="Strikethrough"
@@ -558,7 +612,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Strikethrough
+        <s aria-hidden="true">S</s>
       </button>
       <button
         aria-label="Inline code"
@@ -568,7 +622,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Inline code
+        <span className="richer-editor__toolbar-code" aria-hidden="true">
+          {'</>'}
+        </span>
       </button>
       <button
         aria-label="Clear formatting"
@@ -577,7 +633,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Clear formatting
+        <span className="richer-editor__toolbar-text" aria-hidden="true">
+          Clear
+        </span>
       </button>
       <button
         aria-label="Heading 2"
@@ -587,7 +645,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Heading 2
+        <span className="richer-editor__toolbar-text" aria-hidden="true">
+          H2
+        </span>
       </button>
       <button
         aria-label="Bulleted list"
@@ -597,7 +657,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Bulleted list
+        <span className="richer-editor__toolbar-list" aria-hidden="true">
+          • —
+        </span>
       </button>
       <button
         aria-label="Ordered list"
@@ -607,7 +669,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Ordered list
+        <span className="richer-editor__toolbar-list" aria-hidden="true">
+          1. —
+        </span>
       </button>
       <button
         aria-label="Task list"
@@ -617,7 +681,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Task list
+        <span className="richer-editor__toolbar-list" aria-hidden="true">
+          □ —
+        </span>
       </button>
       <button
         aria-label="Blockquote"
@@ -627,7 +693,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Blockquote
+        <span className="richer-editor__toolbar-quote" aria-hidden="true">
+          “
+        </span>
       </button>
       <button
         aria-label="Callout"
@@ -637,7 +705,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Callout
+        <span className="richer-editor__toolbar-callout" aria-hidden="true">
+          !
+        </span>
       </button>
       <button
         aria-label="Code block"
@@ -647,7 +717,9 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        Code block
+        <span className="richer-editor__toolbar-code" aria-hidden="true">
+          {'{ }'}
+        </span>
       </button>
     </div>
   );
@@ -811,6 +883,7 @@ export function RicherEditor({
   const isControlled = document !== undefined;
   const slashMenuId = useId();
   const initialModeRef = useRef(isControlled);
+  const [focusMode, setFocusMode] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [dismissedSlashMatch, setDismissedSlashMatch] = useState<string | null>(
     null,
@@ -851,6 +924,7 @@ export function RicherEditor({
           : extension,
       ),
       Search,
+      FocusMode,
     ];
   }
 
@@ -926,6 +1000,30 @@ export function RicherEditor({
       setSearchOpen(false);
     }
   }, [features?.search]);
+
+  useEffect(() => {
+    if (!editor || (features?.focusMode && editable) || !focusMode) {
+      return;
+    }
+
+    setFocusMode(false);
+    editor.commands.setFocusMode(false);
+  }, [editable, editor, features?.focusMode, focusMode]);
+
+  useEffect(() => {
+    if (!editor || !focusMode) {
+      return;
+    }
+
+    const centerSelection = () => centerEditorSelection(editor);
+
+    centerSelection();
+    editor.on('selectionUpdate', centerSelection);
+
+    return () => {
+      editor.off('selectionUpdate', centerSelection);
+    };
+  }, [editor, focusMode]);
 
   useEffect(() => {
     setSelectedSlashIndex(0);
@@ -1051,7 +1149,13 @@ export function RicherEditor({
     };
   }, [activeSlashMenuItem, editor, slashMenuId, slashMenuOpen]);
 
-  const rootClassName = ['richer-editor', className].filter(Boolean).join(' ');
+  const rootClassName = [
+    'richer-editor',
+    focusMode && 'richer-editor--focus-mode',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div
@@ -1076,6 +1180,22 @@ export function RicherEditor({
       ) : null}
       {features?.toolbar ? (
         <RicherToolbar editable={editable} editor={editor} />
+      ) : null}
+      {features?.focusMode && editable && editor ? (
+        <button
+          aria-label="Focus mode"
+          aria-pressed={focusMode}
+          className="richer-editor__focus-toggle"
+          onClick={() => {
+            const enabled = !focusMode;
+
+            setFocusMode(enabled);
+            editor.commands.setFocusMode(enabled);
+          }}
+          type="button"
+        >
+          Focus mode
+        </button>
       ) : null}
       {features?.search && searchOpen && editor ? (
         <RicherSearchPanel

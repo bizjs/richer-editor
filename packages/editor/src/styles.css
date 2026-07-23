@@ -17,24 +17,65 @@
 
 .richer-editor__toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 0.125rem;
   align-items: center;
   margin: -0.5rem -0.5rem 0.75rem;
   padding: 0.5rem;
+  overflow-x: auto;
   border-bottom: 1px solid var(--richer-border);
+  scrollbar-width: thin;
 }
 
 .richer-editor__toolbar button,
 .richer-editor__bubble-menu button {
-  min-height: 2rem;
-  padding: 0.25rem 0.5rem;
+  display: inline-grid;
+  flex: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.625rem;
   font: inherit;
   color: inherit;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
   border-radius: calc(var(--richer-radius) * 0.625);
+  place-items: center;
+}
+
+.richer-editor__toolbar-text,
+.richer-editor__toolbar-list {
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.richer-editor__toolbar-code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.richer-editor__toolbar-underline {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.richer-editor__toolbar-quote {
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.richer-editor__toolbar-callout {
+  display: inline-grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  place-items: center;
 }
 
 .richer-editor__toolbar button:hover:not(:disabled),
@@ -63,7 +104,7 @@
 
 .richer-editor__bubble-menu {
   display: flex;
-  gap: 0.25rem;
+  gap: 0.125rem;
   padding: 0.375rem;
   color: var(--richer-foreground);
   background: var(--richer-background);
@@ -113,6 +154,34 @@
 .richer-editor__slash-menu [role='status'] {
   padding: 0.5rem 0.625rem;
   color: color-mix(in srgb, currentColor 64%, transparent);
+}
+
+.richer-editor__focus-toggle {
+  display: block;
+  min-height: 2.75rem;
+  margin: 0 0 0.75rem auto;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--richer-border);
+  border-radius: calc(var(--richer-radius) * 0.625);
+}
+
+.richer-editor__focus-toggle:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.richer-editor__focus-toggle[aria-pressed='true'] {
+  color: var(--richer-background);
+  background: var(--richer-foreground);
+  border-color: var(--richer-foreground);
+}
+
+.richer-editor__focus-toggle:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 .richer-editor__search {
@@ -215,6 +284,22 @@
 .richer-editor__content:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+
+.richer-editor__content .richer-editor__focus-dim {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
+
+.richer-editor--focus-mode .richer-editor__content {
+  padding-block: 40vh;
+  padding-block: 40dvh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .richer-editor__content .richer-editor__focus-dim {
+    transition: none;
+  }
 }
 
 .richer-editor__content .richer-editor__search-match {

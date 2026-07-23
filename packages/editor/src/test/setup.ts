@@ -26,5 +26,6 @@ function createTestRectList(): DOMRectList {
 
 Range.prototype.getBoundingClientRect = () => createTestRect();
 Range.prototype.getClientRects = () => createTestRectList();
+window.scrollBy = () => undefined;
 
 afterEach(cleanup);

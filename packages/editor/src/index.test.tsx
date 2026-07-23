@@ -1800,6 +1800,377 @@ describe('RicherEditor public component', () => {
     });
   });
 
+  it('dims blocks outside the current block when focus mode is enabled', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+    const document = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-first', textAlign: null },
+          content: [{ type: 'text', text: 'Current block' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-second', textAlign: null },
+          content: [{ type: 'text', text: 'Other block' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={document}
+        features={{ focusMode: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const focusMode = screen.getByRole('button', { name: 'Focus mode' });
+    const [firstBlock, secondBlock] = editor.querySelectorAll(':scope > p');
+    const root = editor.closest('.richer-editor');
+
+    expect(focusMode).toHaveAttribute('aria-pressed', 'false');
+    expect(root).not.toHaveClass('richer-editor--focus-mode');
+
+    fireEvent.click(focusMode);
+
+    expect(focusMode).toHaveAttribute('aria-pressed', 'true');
+    expect(root).toHaveClass('richer-editor--focus-mode');
+    expect(firstBlock).not.toHaveClass('richer-editor__focus-dim');
+    expect(secondBlock).toHaveClass('richer-editor__focus-dim');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('centers the selection when focus mode is enabled and the caret moves', async () => {
+    const scrollBy = vi
+      .spyOn(window, 'scrollBy')
+      .mockImplementation(() => undefined);
+    const focusDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-center-first', textAlign: null },
+          content: [{ type: 'text', text: 'First block' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-center-second', textAlign: null },
+          content: [{ type: 'text', text: 'Second block' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+
+    await waitFor(() => {
+      expect(scrollBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavior: 'smooth',
+          top: expect.any(Number),
+        }),
+      );
+    });
+
+    scrollBy.mockClear();
+
+    const secondText = editor.querySelectorAll(':scope > p')[1]?.firstChild;
+    const selection = window.getSelection();
+
+    if (!secondText || !selection) {
+      throw new Error('Expected a selectable second focus-mode block.');
+    }
+
+    const range = document.createRange();
+
+    editor.focus();
+    range.setStart(secondText, 3);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+
+    await waitFor(() => {
+      expect(scrollBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavior: 'smooth',
+          top: expect.any(Number),
+        }),
+      );
+    });
+
+    scrollBy.mockRestore();
+  });
+
+  it('centers without animation when reduced motion is requested', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockReturnValue({
+        matches: true,
+      }),
+    );
+    const scrollBy = vi
+      .spyOn(window, 'scrollBy')
+      .mockImplementation(() => undefined);
+
+    try {
+      render(<RicherEditor features={{ focusMode: true }} />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+
+      await waitFor(() => {
+        expect(scrollBy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: 'auto',
+            top: expect.any(Number),
+          }),
+        );
+      });
+    } finally {
+      scrollBy.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('centers within the nearest scrollable host container', async () => {
+    const windowScrollBy = vi
+      .spyOn(window, 'scrollBy')
+      .mockImplementation(() => undefined);
+
+    render(
+      <div data-testid="scroll-host" style={{ overflowY: 'auto' }}>
+        <RicherEditor features={{ focusMode: true }} />
+      </div>,
+    );
+
+    const scrollHost = screen.getByTestId('scroll-host');
+    const scrollBy = vi.fn();
+
+    Object.defineProperties(scrollHost, {
+      clientHeight: { configurable: true, value: 200 },
+      scrollBy: { configurable: true, value: scrollBy },
+      scrollHeight: { configurable: true, value: 600 },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+
+    await waitFor(() => {
+      expect(scrollBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavior: 'smooth',
+          top: expect.any(Number),
+        }),
+      );
+    });
+    expect(windowScrollBy).not.toHaveBeenCalled();
+
+    windowScrollBy.mockRestore();
+  });
+
+  it('stops centering the selection after the editor unmounts', async () => {
+    const scrollBy = vi
+      .spyOn(window, 'scrollBy')
+      .mockImplementation(() => undefined);
+    const { unmount } = render(<RicherEditor features={{ focusMode: true }} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+
+    await waitFor(() => expect(scrollBy).toHaveBeenCalled());
+
+    scrollBy.mockClear();
+    unmount();
+    document.dispatchEvent(new Event('selectionchange'));
+
+    expect(scrollBy).not.toHaveBeenCalled();
+    scrollBy.mockRestore();
+  });
+
+  it('updates the focused block when the caret moves between blocks', async () => {
+    const focusDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-move-first', textAlign: null },
+          content: [{ type: 'text', text: 'First block' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-move-second', textAlign: null },
+          content: [{ type: 'text', text: 'Second block' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const [firstBlock, secondBlock] = editor.querySelectorAll(':scope > p');
+    const secondText = secondBlock?.firstChild;
+    const selection = window.getSelection();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+
+    if (!secondText || !selection) {
+      throw new Error('Expected a selectable second focus-mode block.');
+    }
+
+    const range = document.createRange();
+
+    editor.focus();
+    range.setStart(secondText, 3);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+
+    await waitFor(() => {
+      expect(firstBlock).toHaveClass('richer-editor__focus-dim');
+      expect(secondBlock).not.toHaveClass('richer-editor__focus-dim');
+    });
+
+    const firstText = firstBlock?.firstChild;
+
+    if (!firstText) {
+      throw new Error('Expected a selectable first focus-mode block.');
+    }
+
+    const crossBlockRange = document.createRange();
+
+    crossBlockRange.setStart(firstText, 0);
+    crossBlockRange.setEnd(secondText, secondText.textContent?.length ?? 0);
+    selection.removeAllRanges();
+    selection.addRange(crossBlockRange);
+    document.dispatchEvent(new Event('selectionchange'));
+
+    await waitFor(() => {
+      expect(firstBlock).not.toHaveClass('richer-editor__focus-dim');
+      expect(secondBlock).not.toHaveClass('richer-editor__focus-dim');
+    });
+  });
+
+  it('clears focus mode when the feature is disabled', async () => {
+    const focusDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-disable-first', textAlign: null },
+          content: [{ type: 'text', text: 'Current block' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-disable-second', textAlign: null },
+          content: [{ type: 'text', text: 'Other block' }],
+        },
+      ],
+    });
+    const { rerender } = render(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const secondBlock = editor.querySelectorAll(':scope > p')[1];
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+    expect(secondBlock).toHaveClass('richer-editor__focus-dim');
+
+    rerender(<RicherEditor defaultDocument={focusDocument} features={{}} />);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', { name: 'Focus mode' }),
+      ).not.toBeInTheDocument();
+      expect(secondBlock).not.toHaveClass('richer-editor__focus-dim');
+    });
+
+    rerender(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Focus mode' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('clears focus mode when the editor becomes read-only', async () => {
+    const focusDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-read-only-first', textAlign: null },
+          content: [{ type: 'text', text: 'Current block' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'focus-read-only-second', textAlign: null },
+          content: [{ type: 'text', text: 'Other block' }],
+        },
+      ],
+    });
+    const { rerender } = render(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const secondBlock = editor.querySelectorAll(':scope > p')[1];
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus mode' }));
+    expect(secondBlock).toHaveClass('richer-editor__focus-dim');
+
+    rerender(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        editable={false}
+        features={{ focusMode: true }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('button', { name: 'Focus mode' }),
+      ).not.toBeInTheDocument();
+      expect(secondBlock).not.toHaveClass('richer-editor__focus-dim');
+    });
+
+    rerender(
+      <RicherEditor
+        defaultDocument={focusDocument}
+        features={{ focusMode: true }}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Focus mode' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
   it('shows a custom placeholder in an empty editable document', () => {
     render(<RicherEditor placeholder="Start a document" />);
 
