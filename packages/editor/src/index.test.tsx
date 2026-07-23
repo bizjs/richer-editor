@@ -879,6 +879,927 @@ describe('RicherEditor public component', () => {
     });
   });
 
+  it('opens the slash menu when a slash is typed in an empty paragraph', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+
+    expect(
+      within(menu).getByRole('option', { name: 'Text' }),
+    ).toBeInTheDocument();
+  });
+
+  it('closes the slash menu with Escape without deleting typed text', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-escape-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+    expect(
+      await screen.findByRole('listbox', { name: 'Insert block' }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(editor, { key: 'Escape' });
+
+    expect(
+      screen.queryByRole('listbox', { name: 'Insert block' }),
+    ).not.toBeInTheDocument();
+    expect(editor).toHaveTextContent('/');
+  });
+
+  it('can reopen the same slash match after the document is reset', async () => {
+    function ControlledSlashEditor() {
+      const [document, setDocument] = useState(() =>
+        makeDocument('', 'slash-reopen-paragraph'),
+      );
+
+      return (
+        <>
+          <button
+            onClick={() =>
+              setDocument(makeDocument('', 'slash-reopen-paragraph'))
+            }
+            type="button"
+          >
+            Reset slash document
+          </button>
+          <RicherEditor
+            document={document}
+            features={{ slashMenu: true }}
+            onChange={({ document: nextDocument }) => setDocument(nextDocument)}
+          />
+        </>
+      );
+    }
+
+    render(<ControlledSlashEditor />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+    expect(
+      await screen.findByRole('listbox', { name: 'Insert block' }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(editor, { key: 'Escape' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Reset slash document' }),
+    );
+    await waitFor(() => expect(editor).not.toHaveTextContent('/'));
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+    setCaretOffset(editor, 1);
+
+    expect(
+      await screen.findByRole('listbox', { name: 'Insert block' }),
+    ).toBeInTheDocument();
+  });
+
+  it('filters slash commands by the typed query', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-filter-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/call');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+
+    expect(
+      within(menu).getByRole('option', { name: 'Callout' }),
+    ).toBeInTheDocument();
+    expect(
+      within(menu).queryByRole('option', { name: 'Text' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('inserts a callout from a filtered slash command', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-callout-paragraph')}
+        features={{ slashMenu: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/call');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+
+    fireEvent.click(within(menu).getByRole('option', { name: 'Callout' }));
+
+    await waitFor(() => {
+      expect(
+        onChange.mock.calls.at(-1)?.[0].document.content.content?.[0],
+      ).toMatchObject({
+        type: 'callout',
+        attrs: { id: expect.any(String), variant: 'info' },
+        content: [
+          {
+            type: 'paragraph',
+            attrs: { id: 'slash-callout-paragraph', textAlign: null },
+          },
+        ],
+      });
+    });
+    expect(editor).not.toHaveTextContent('/call');
+  });
+
+  it('runs the filtered slash command with Enter', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-enter-paragraph')}
+        features={{ slashMenu: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/call');
+    expect(
+      await screen.findByRole('option', { name: 'Callout' }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(editor, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(
+        onChange.mock.calls.at(-1)?.[0].document.content.content?.[0]?.type,
+      ).toBe('callout');
+    });
+  });
+
+  it('moves through slash commands with arrow keys before pressing Enter', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-arrow-paragraph')}
+        features={{ slashMenu: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/heading');
+
+    const heading1Option = await screen.findByRole('option', {
+      name: 'Heading 1',
+    });
+    const heading2Option = screen.getByRole('option', { name: 'Heading 2' });
+
+    expect(heading1Option).toHaveAttribute('aria-selected', 'true');
+    expect(heading2Option).toHaveAttribute('aria-selected', 'false');
+
+    fireEvent.keyDown(editor, { key: 'ArrowDown' });
+
+    expect(heading1Option).toHaveAttribute('aria-selected', 'false');
+    expect(heading2Option).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(editor, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(
+        onChange.mock.calls.at(-1)?.[0].document.content.content?.[0],
+      ).toMatchObject({
+        type: 'heading',
+        attrs: {
+          id: 'slash-arrow-paragraph',
+          level: 2,
+          textAlign: null,
+        },
+      });
+    });
+  });
+
+  it('exposes the selected slash command from the focused editor', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-active-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/heading');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+    const heading1Option = within(menu).getByRole('option', {
+      name: 'Heading 1',
+    });
+    const heading2Option = within(menu).getByRole('option', {
+      name: 'Heading 2',
+    });
+
+    expect(menu.id).not.toBe('');
+    expect(heading1Option.id).not.toBe('');
+    expect(editor).toHaveAttribute('aria-controls', menu.id);
+    expect(editor).toHaveAttribute('aria-activedescendant', heading1Option.id);
+
+    fireEvent.keyDown(editor, { key: 'ArrowDown' });
+
+    expect(editor).toHaveAttribute('aria-activedescendant', heading2Option.id);
+  });
+
+  it('wraps from the first to the last slash command with ArrowUp', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-arrow-up-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+
+    const textOption = await screen.findByRole('option', { name: 'Text' });
+    const dividerOption = screen.getByRole('option', { name: 'Divider' });
+
+    expect(textOption).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(editor, { key: 'ArrowUp' });
+
+    expect(textOption).toHaveAttribute('aria-selected', 'false');
+    expect(dividerOption).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('lists the supported block commands in a stable order', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-commands-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+
+    expect(
+      within(menu)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
+      'Text',
+      'Heading 1',
+      'Heading 2',
+      'Heading 3',
+      'Bullet list',
+      'Ordered list',
+      'Task list',
+      'Table',
+      'Quote',
+      'Code block',
+      'Callout',
+      'Toggle',
+      'Divider',
+    ]);
+  });
+
+  it('shows an explicit empty state when no slash commands match', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-empty-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/not-a-command');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+
+    expect(
+      within(menu).getByRole('status', { name: 'No commands found' }),
+    ).toBeInTheDocument();
+    expect(within(menu).queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('closes the slash menu when the editor loses focus', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-blur-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+    expect(
+      await screen.findByRole('listbox', { name: 'Insert block' }),
+    ).toBeInTheDocument();
+
+    fireEvent.blur(editor);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('listbox', { name: 'Insert block' }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not open the slash menu during text composition', () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-composition-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.compositionStart(editor);
+    insertTextAtEnd(editor, '/');
+
+    expect(
+      screen.queryByRole('listbox', { name: 'Insert block' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['Text', '/text', 'paragraph'],
+    ['Bullet list', '/bullet', 'bulletList'],
+    ['Ordered list', '/ordered', 'orderedList'],
+    ['Task list', '/task', 'taskList'],
+    ['Table', '/table', 'table'],
+    ['Quote', '/quote', 'blockquote'],
+    ['Code block', '/code', 'codeBlock'],
+    ['Toggle', '/toggle', 'details'],
+    ['Divider', '/divider', 'horizontalRule'],
+  ] as const)(
+    'runs the %s slash command',
+    async (label, query, expectedType) => {
+      const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+      render(
+        <RicherEditor
+          defaultDocument={makeDocument('', `slash-${expectedType}`)}
+          features={{ slashMenu: true }}
+          onChange={onChange}
+        />,
+      );
+
+      const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+      editor.focus();
+      insertTextAtEnd(editor, query);
+
+      const option = await screen.findByRole('option', { name: label });
+
+      fireEvent.click(option);
+
+      await waitFor(() => {
+        expect(
+          onChange.mock.calls.at(-1)?.[0].document.content.content?.[0]?.type,
+        ).toBe(expectedType);
+      });
+      expect(editor).not.toHaveTextContent(query);
+    },
+  );
+
+  it('closes the slash menu when the editor becomes read-only', async () => {
+    const initialDocument = makeDocument('', 'slash-read-only-paragraph');
+    const { rerender } = render(
+      <RicherEditor
+        defaultDocument={initialDocument}
+        features={{ slashMenu: true }}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+    expect(
+      await screen.findByRole('listbox', { name: 'Insert block' }),
+    ).toBeInTheDocument();
+
+    rerender(
+      <RicherEditor
+        defaultDocument={initialDocument}
+        editable={false}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole('listbox', { name: 'Insert block' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not open the slash menu for a slash inside a word', () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('word', 'slash-word-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    setCaretOffset(editor, 4);
+    insertTextAtEnd(editor, '/call');
+
+    expect(
+      screen.queryByRole('listbox', { name: 'Insert block' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('opens search with the platform shortcut and reports matching text', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find this text, then find it again.',
+          'search-paragraph',
+        )}
+        features={{ search: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+    const findInput = within(search).getByRole('searchbox', { name: 'Find' });
+
+    expect(findInput).toHaveFocus();
+
+    fireEvent.change(findInput, { target: { value: 'find' } });
+
+    expect(
+      await within(search).findByRole('status', { name: 'Search matches' }),
+    ).toHaveTextContent('1/2');
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(2);
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match--active'),
+    ).toHaveLength(1);
+
+    fireEvent.click(
+      within(search).getByRole('button', { name: 'Close search' }),
+    );
+
+    expect(
+      screen.queryByRole('search', { name: 'Find and replace' }),
+    ).not.toBeInTheDocument();
+    expect(editor).toHaveFocus();
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(0);
+  });
+
+  it('moves between search matches in both directions and wraps around', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find the first result, then find the second.',
+          'search-navigation-paragraph',
+        )}
+        features={{ search: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { ctrlKey: true, key: 'f' });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+
+    fireEvent.change(within(search).getByRole('searchbox', { name: 'Find' }), {
+      target: { value: 'find' },
+    });
+
+    const status = within(search).getByRole('status', {
+      name: 'Search matches',
+    });
+    const activeMatch = () =>
+      editor.querySelector('.richer-editor__search-match--active');
+
+    expect(status).toHaveTextContent('1/2');
+    expect(activeMatch()).toHaveTextContent('Find');
+
+    fireEvent.click(within(search).getByRole('button', { name: 'Next match' }));
+
+    expect(status).toHaveTextContent('2/2');
+    expect(activeMatch()).toHaveTextContent('find');
+
+    fireEvent.click(within(search).getByRole('button', { name: 'Next match' }));
+
+    expect(status).toHaveTextContent('1/2');
+    expect(activeMatch()).toHaveTextContent('Find');
+
+    fireEvent.click(
+      within(search).getByRole('button', { name: 'Previous match' }),
+    );
+
+    expect(status).toHaveTextContent('2/2');
+    expect(activeMatch()).toHaveTextContent('find');
+  });
+
+  it('navigates search matches with Enter and Shift+Enter', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find with Enter, then find with Shift+Enter.',
+          'search-keyboard-paragraph',
+        )}
+        features={{ search: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+    const findInput = within(search).getByRole('searchbox', { name: 'Find' });
+    const status = within(search).getByRole('status', {
+      name: 'Search matches',
+    });
+
+    fireEvent.change(findInput, { target: { value: 'find' } });
+    fireEvent.keyDown(findInput, { key: 'Enter' });
+
+    expect(status).toHaveTextContent('2/2');
+
+    fireEvent.keyDown(findInput, { key: 'Enter', shiftKey: true });
+
+    expect(status).toHaveTextContent('1/2');
+    expect(findInput).toHaveFocus();
+  });
+
+  it('replaces the current search match through the document change callback', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find the first result, then find the second.',
+          'search-replace-paragraph',
+        )}
+        features={{ search: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+
+    fireEvent.change(within(search).getByRole('searchbox', { name: 'Find' }), {
+      target: { value: 'find' },
+    });
+    fireEvent.change(within(search).getByRole('textbox', { name: 'Replace' }), {
+      target: { value: 'Locate' },
+    });
+    const replaceCurrent = within(search).getByRole('button', {
+      name: 'Replace current',
+    });
+
+    expect(fireEvent.keyDown(replaceCurrent, { key: 'Enter' })).toBe(true);
+    fireEvent.click(replaceCurrent);
+
+    await waitFor(() => {
+      expect(
+        onChange.mock.calls.at(-1)?.[0].document.content.content?.[0]?.content,
+      ).toEqual([
+        {
+          type: 'text',
+          text: 'Locate the first result, then find the second.',
+        },
+      ]);
+    });
+    expect(editor).toHaveTextContent(
+      'Locate the first result, then find the second.',
+    );
+    expect(
+      within(search).getByRole('status', { name: 'Search matches' }),
+    ).toHaveTextContent('1/1');
+  });
+
+  it('replaces every search match in one document update', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find the first result, then find the second.',
+          'search-replace-all-paragraph',
+        )}
+        features={{ search: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { ctrlKey: true, key: 'f' });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+
+    fireEvent.change(within(search).getByRole('searchbox', { name: 'Find' }), {
+      target: { value: 'find' },
+    });
+    fireEvent.change(within(search).getByRole('textbox', { name: 'Replace' }), {
+      target: { value: 'Locate' },
+    });
+    fireEvent.click(
+      within(search).getByRole('button', { name: 'Replace all' }),
+    );
+
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(
+        onChange.mock.calls[0]?.[0].document.content.content?.[0]?.content,
+      ).toEqual([
+        {
+          type: 'text',
+          text: 'Locate the first result, then Locate the second.',
+        },
+      ]);
+    });
+    expect(editor).toHaveTextContent(
+      'Locate the first result, then Locate the second.',
+    );
+    expect(
+      within(search).getByRole('status', { name: 'Search matches' }),
+    ).toHaveTextContent('No matches');
+  });
+
+  it('stays closed after the search feature is disabled and re-enabled', async () => {
+    const initialDocument = makeDocument(
+      'Find this text.',
+      'search-feature-paragraph',
+    );
+    const { rerender } = render(
+      <RicherEditor
+        defaultDocument={initialDocument}
+        features={{ search: true }}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+
+    fireEvent.change(within(search).getByRole('searchbox', { name: 'Find' }), {
+      target: { value: 'find' },
+    });
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(1);
+
+    rerender(<RicherEditor defaultDocument={initialDocument} features={{}} />);
+
+    expect(
+      screen.queryByRole('search', { name: 'Find and replace' }),
+    ).not.toBeInTheDocument();
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(0);
+
+    rerender(
+      <RicherEditor
+        defaultDocument={initialDocument}
+        features={{ search: true }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole('search', { name: 'Find and replace' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('disables search actions for empty queries and missing results', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find this text.',
+          'search-empty-query-paragraph',
+        )}
+        features={{ search: true }}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+    const findInput = within(search).getByRole('searchbox', { name: 'Find' });
+    const status = within(search).getByRole('status', {
+      name: 'Search matches',
+    });
+    const actions = [
+      within(search).getByRole('button', { name: 'Previous match' }),
+      within(search).getByRole('button', { name: 'Next match' }),
+      within(search).getByRole('button', { name: 'Replace current' }),
+      within(search).getByRole('button', { name: 'Replace all' }),
+    ];
+
+    expect(status).toHaveTextContent('0/0');
+    actions.forEach((action) => expect(action).toBeDisabled());
+
+    fireEvent.change(findInput, { target: { value: 'missing' } });
+
+    expect(status).toHaveTextContent('No matches');
+    actions.forEach((action) => expect(action).toBeDisabled());
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(0);
+
+    fireEvent.change(findInput, { target: { value: 'find' } });
+    expect(status).toHaveTextContent('1/1');
+
+    fireEvent.change(findInput, { target: { value: '' } });
+
+    expect(status).toHaveTextContent('0/0');
+    actions.forEach((action) => expect(action).toBeDisabled());
+    expect(
+      editor.querySelectorAll('.richer-editor__search-match'),
+    ).toHaveLength(0);
+  });
+
+  it('allows searching but disables replacement in read-only mode', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument(
+          'Find read-only content.',
+          'search-read-only-paragraph',
+        )}
+        editable={false}
+        features={{ search: true }}
+        onChange={onChange}
+      />,
+    );
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { ctrlKey: true, key: 'f' });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+    const findInput = within(search).getByRole('searchbox', { name: 'Find' });
+    const replaceInput = within(search).getByRole('textbox', {
+      name: 'Replace',
+    });
+    const previous = within(search).getByRole('button', {
+      name: 'Previous match',
+    });
+    const next = within(search).getByRole('button', { name: 'Next match' });
+    const replaceCurrent = within(search).getByRole('button', {
+      name: 'Replace current',
+    });
+    const replaceAll = within(search).getByRole('button', {
+      name: 'Replace all',
+    });
+
+    fireEvent.change(findInput, { target: { value: 'find' } });
+
+    expect(
+      within(search).getByRole('status', { name: 'Search matches' }),
+    ).toHaveTextContent('1/1');
+    expect(previous).toBeEnabled();
+    expect(next).toBeEnabled();
+    expect(replaceInput).toBeDisabled();
+    expect(replaceCurrent).toBeDisabled();
+    expect(replaceAll).toBeDisabled();
+
+    fireEvent.click(replaceCurrent);
+    fireEvent.click(replaceAll);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(editor).toHaveTextContent('Find read-only content.');
+  });
+
+  it('recalculates search matches after a controlled document update', async () => {
+    function ControlledSearchEditor() {
+      const [document, setDocument] = useState(() =>
+        makeDocument('Find this once.', 'search-controlled-paragraph'),
+      );
+
+      return (
+        <>
+          <button
+            onClick={() =>
+              setDocument(
+                makeDocument(
+                  'Find this twice, then find it again.',
+                  'search-controlled-paragraph',
+                ),
+              )
+            }
+            type="button"
+          >
+            Update search document
+          </button>
+          <RicherEditor document={document} features={{ search: true }} />
+        </>
+      );
+    }
+
+    render(<ControlledSearchEditor />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    fireEvent.keyDown(editor, { key: 'f', metaKey: true });
+
+    const search = await screen.findByRole('search', {
+      name: 'Find and replace',
+    });
+
+    fireEvent.change(within(search).getByRole('searchbox', { name: 'Find' }), {
+      target: { value: 'find' },
+    });
+    expect(
+      within(search).getByRole('status', { name: 'Search matches' }),
+    ).toHaveTextContent('1/1');
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Update search document' }),
+    );
+
+    await waitFor(() => {
+      expect(editor).toHaveTextContent('Find this twice, then find it again.');
+      expect(
+        within(search).getByRole('status', { name: 'Search matches' }),
+      ).toHaveTextContent('1/2');
+    });
+  });
+
   it('shows a custom placeholder in an empty editable document', () => {
     render(<RicherEditor placeholder="Start a document" />);
 
