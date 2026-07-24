@@ -92,6 +92,34 @@ function makeCalloutDocument(variant = 'info'): RicherDocument {
   });
 }
 
+function makeTaskListDocument(): RicherDocument {
+  return createDocument({
+    type: 'doc',
+    content: [
+      {
+        type: 'taskList',
+        attrs: { id: 'terminal-task-list' },
+        content: [
+          {
+            type: 'taskItem',
+            attrs: { checked: false, id: 'terminal-task-item' },
+            content: [
+              {
+                type: 'paragraph',
+                attrs: {
+                  id: 'terminal-task-paragraph',
+                  textAlign: null,
+                },
+                content: [{ type: 'text', text: 'Finish the task' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+}
+
 function insertTextAtEnd(editor: HTMLElement, text: string): void {
   const paragraph = editor.querySelector('p');
 
@@ -487,6 +515,21 @@ describe('RicherEditor public component', () => {
     });
   });
 
+  it('keeps a task checkbox and its editable content on the same row', () => {
+    render(<RicherEditor defaultDocument={makeTaskListDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const taskItem = editor.querySelector('li[data-checked]');
+    const checkbox = taskItem?.querySelector(':scope > label input');
+    const content = taskItem?.querySelector(':scope > div');
+
+    expect(taskItem).toBeInstanceOf(HTMLElement);
+    expect(taskItem).toHaveClass('richer-editor__task-item');
+    expect(checkbox).toHaveAttribute('type', 'checkbox');
+    expect(content).toHaveTextContent('Finish the task');
+    expect(checkbox?.closest('label')?.nextElementSibling).toBe(content);
+  });
+
   it('wraps a paragraph in a blockquote from the toolbar', async () => {
     const onChange = vi.fn<(change: TestEditorChange) => void>();
 
@@ -703,6 +746,21 @@ describe('RicherEditor public component', () => {
     }
   });
 
+  it('keeps focus mode in the compact formatting toolbar', () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('Focus', 'block-toolbar-focus')}
+        features={{ focusMode: true, toolbar: true }}
+      />,
+    );
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+
+    expect(
+      within(toolbar).getByRole('button', { name: 'Focus mode' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('applies bold formatting from the selected text menu', async () => {
     const onChange = vi.fn<(change: TestEditorChange) => void>();
 
@@ -897,6 +955,29 @@ describe('RicherEditor public component', () => {
     expect(
       within(menu).getByRole('option', { name: 'Text' }),
     ).toBeInTheDocument();
+  });
+
+  it('groups slash commands for compact scanning', async () => {
+    render(
+      <RicherEditor
+        defaultDocument={makeDocument('', 'slash-groups-paragraph')}
+        features={{ slashMenu: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    editor.focus();
+    insertTextAtEnd(editor, '/');
+
+    const menu = await screen.findByRole('listbox', { name: 'Insert block' });
+    const heading = within(menu).getByRole('option', { name: 'Heading 1' });
+
+    expect(within(menu).getByText('Basic blocks')).toBeInTheDocument();
+    expect(within(menu).getByText('Lists')).toBeInTheDocument();
+    expect(within(menu).getByText('Advanced blocks')).toBeInTheDocument();
+    expect(within(heading).getByText('H1')).toBeInTheDocument();
+    expect(within(heading).getByText('#')).toBeInTheDocument();
   });
 
   it('closes the slash menu with Escape without deleting typed text', async () => {
@@ -1178,7 +1259,7 @@ describe('RicherEditor public component', () => {
     expect(
       within(menu)
         .getAllByRole('option')
-        .map((option) => option.textContent),
+        .map((option) => option.getAttribute('aria-label')),
     ).toEqual([
       'Text',
       'Heading 1',
@@ -1797,6 +1878,375 @@ describe('RicherEditor public component', () => {
       expect(
         within(search).getByRole('status', { name: 'Search matches' }),
       ).toHaveTextContent('1/2');
+    });
+  });
+
+  it('renders document headings in the enabled outline', () => {
+    const outlineDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'outline-title', level: 1, textAlign: null },
+          content: [{ type: 'text', text: 'Document title' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'outline-intro', textAlign: null },
+          content: [{ type: 'text', text: 'Introduction' }],
+        },
+        {
+          type: 'heading',
+          attrs: { id: 'outline-details', level: 3, textAlign: null },
+          content: [{ type: 'text', text: 'Details' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={outlineDocument}
+        features={{ outline: true }}
+      />,
+    );
+
+    const outline = screen.getByRole('navigation', {
+      name: 'Document outline',
+    });
+    const title = within(outline).getByRole('button', {
+      name: 'Document title, heading level 1',
+    });
+    const details = within(outline).getByRole('button', {
+      name: 'Details, heading level 3',
+    });
+
+    expect(title).toHaveAttribute('aria-current', 'location');
+    expect(details).not.toHaveAttribute('aria-current');
+    expect(outline).not.toHaveTextContent('Introduction');
+  });
+
+  it('navigates to an outline heading without changing the document', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+    const outlineDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'outline-navigation-title', level: 1, textAlign: null },
+          content: [{ type: 'text', text: 'Document title' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'outline-navigation-intro', textAlign: null },
+          content: [{ type: 'text', text: 'Introduction' }],
+        },
+        {
+          type: 'heading',
+          attrs: {
+            id: 'outline-navigation-details',
+            level: 2,
+            textAlign: null,
+          },
+          content: [{ type: 'text', text: 'Details' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={outlineDocument}
+        features={{ outline: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const details = screen.getByRole('button', {
+      name: 'Details, heading level 2',
+    });
+
+    fireEvent.click(details);
+
+    await waitFor(() => {
+      expect(editor).toHaveFocus();
+      expect(details).toHaveAttribute('aria-current', 'location');
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('updates the outline after a controlled document replacement', async () => {
+    function ControlledOutlineEditor() {
+      const [document, setDocument] = useState(() =>
+        createDocument({
+          type: 'doc',
+          content: [
+            {
+              type: 'heading',
+              attrs: {
+                id: 'outline-controlled-first',
+                level: 1,
+                textAlign: null,
+              },
+              content: [{ type: 'text', text: 'First outline' }],
+            },
+          ],
+        }),
+      );
+
+      return (
+        <>
+          <button
+            onClick={() =>
+              setDocument(
+                createDocument({
+                  type: 'doc',
+                  content: [
+                    {
+                      type: 'heading',
+                      attrs: {
+                        id: 'outline-controlled-second',
+                        level: 2,
+                        textAlign: null,
+                      },
+                      content: [{ type: 'text', text: 'Updated outline' }],
+                    },
+                  ],
+                }),
+              )
+            }
+            type="button"
+          >
+            Update outline document
+          </button>
+          <RicherEditor document={document} features={{ outline: true }} />
+        </>
+      );
+    }
+
+    render(<ControlledOutlineEditor />);
+
+    expect(
+      screen.getByRole('button', {
+        name: 'First outline, heading level 1',
+      }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Update outline document' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'Updated outline, heading level 2',
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {
+          name: 'First outline, heading level 1',
+        }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('updates the outline when a heading is edited', async () => {
+    const outlineDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'outline-edit-heading', level: 1, textAlign: null },
+          content: [{ type: 'text', text: 'Original heading' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={outlineDocument}
+        features={{ outline: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const heading = editor.querySelector('h1');
+
+    if (!heading) {
+      throw new Error('Expected the editor to contain an outline heading.');
+    }
+
+    heading.textContent = 'Edited heading';
+    fireEvent.input(editor, {
+      data: 'Edited heading',
+      inputType: 'insertText',
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', {
+          name: 'Edited heading, heading level 1',
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {
+          name: 'Original heading, heading level 1',
+        }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('tracks the current outline section as the caret moves', async () => {
+    const onChange = vi.fn<(change: TestEditorChange) => void>();
+    const outlineDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'outline-track-first', level: 1, textAlign: null },
+          content: [{ type: 'text', text: 'First section' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'outline-track-first-body', textAlign: null },
+          content: [{ type: 'text', text: 'First body' }],
+        },
+        {
+          type: 'heading',
+          attrs: { id: 'outline-track-second', level: 2, textAlign: null },
+          content: [{ type: 'text', text: 'Second section' }],
+        },
+        {
+          type: 'paragraph',
+          attrs: { id: 'outline-track-second-body', textAlign: null },
+          content: [{ type: 'text', text: 'Second body' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={outlineDocument}
+        features={{ outline: true }}
+        onChange={onChange}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const first = screen.getByRole('button', {
+      name: 'First section, heading level 1',
+    });
+    const second = screen.getByRole('button', {
+      name: 'Second section, heading level 2',
+    });
+    const secondBody = editor.querySelectorAll(':scope > p')[1]?.firstChild;
+    const selection = window.getSelection();
+
+    expect(first).toHaveAttribute('aria-current', 'location');
+
+    if (!secondBody || !selection) {
+      throw new Error('Expected a selectable second outline section.');
+    }
+
+    const range = document.createRange();
+
+    editor.focus();
+    range.setStart(secondBody, 3);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    document.dispatchEvent(new Event('selectionchange'));
+
+    await waitFor(() => {
+      expect(first).not.toHaveAttribute('aria-current');
+      expect(second).toHaveAttribute('aria-current', 'location');
+    });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('handles an empty, collapsed, and disabled outline', async () => {
+    const emptyDocument = makeDocument(
+      'No headings yet.',
+      'outline-empty-paragraph',
+    );
+    const { rerender } = render(
+      <RicherEditor
+        defaultDocument={emptyDocument}
+        features={{ outline: true }}
+      />,
+    );
+
+    const outline = screen.getByRole('navigation', {
+      name: 'Document outline',
+    });
+    const toggle = within(outline).getByRole('button', { name: 'Outline' });
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(outline).toHaveTextContent('Add a heading to build the outline.');
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(outline).not.toHaveTextContent(
+      'Add a heading to build the outline.',
+    );
+
+    rerender(<RicherEditor defaultDocument={emptyDocument} features={{}} />);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('navigation', { name: 'Document outline' }),
+      ).not.toBeInTheDocument();
+    });
+
+    rerender(
+      <RicherEditor
+        defaultDocument={emptyDocument}
+        features={{ outline: true }}
+      />,
+    );
+
+    expect(
+      within(
+        screen.getByRole('navigation', { name: 'Document outline' }),
+      ).getByRole('button', { name: 'Outline' }),
+    ).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('keeps outline navigation available in read-only mode', async () => {
+    const outlineDocument = createDocument({
+      type: 'doc',
+      content: [
+        {
+          type: 'heading',
+          attrs: { id: 'outline-read-only-first', level: 1, textAlign: null },
+          content: [{ type: 'text', text: 'First section' }],
+        },
+        {
+          type: 'heading',
+          attrs: { id: 'outline-read-only-second', level: 2, textAlign: null },
+          content: [{ type: 'text', text: 'Second section' }],
+        },
+      ],
+    });
+
+    render(
+      <RicherEditor
+        defaultDocument={outlineDocument}
+        editable={false}
+        features={{ outline: true }}
+      />,
+    );
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const second = screen.getByRole('button', {
+      name: 'Second section, heading level 2',
+    });
+
+    fireEvent.click(second);
+
+    await waitFor(() => {
+      expect(editor).toHaveFocus();
+      expect(second).toHaveAttribute('aria-current', 'location');
     });
   });
 

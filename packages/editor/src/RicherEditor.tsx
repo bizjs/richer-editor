@@ -34,6 +34,7 @@ export interface RicherEditorCharacterCount {
 export interface RicherEditorFeatures {
   bubbleMenu?: boolean;
   focusMode?: boolean;
+  outline?: boolean;
   search?: boolean;
   slashMenu?: boolean;
   toolbar?: boolean;
@@ -144,14 +145,27 @@ interface SlashMenuMatch {
 }
 
 interface SlashMenuItem {
+  glyph: string;
+  group: SlashMenuGroup;
+  hint?: string;
   key: string;
   keywords: string;
   label: string;
   run: (editor: Editor, range: Range) => void;
 }
 
+type SlashMenuGroup = 'Basic blocks' | 'Lists' | 'Advanced blocks';
+
+const SLASH_MENU_GROUPS: SlashMenuGroup[] = [
+  'Basic blocks',
+  'Lists',
+  'Advanced blocks',
+];
+
 const SLASH_MENU_ITEMS: SlashMenuItem[] = [
   {
+    glyph: 'T',
+    group: 'Basic blocks',
     key: 'text',
     keywords: 'paragraph plain 正文 文本 zhengwen wenben',
     label: 'Text',
@@ -160,6 +174,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: 'H1',
+    group: 'Basic blocks',
+    hint: '#',
     key: 'heading1',
     keywords: 'h1 title 一级标题 标题 biaoti yiji',
     label: 'Heading 1',
@@ -179,6 +196,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: 'H2',
+    group: 'Basic blocks',
+    hint: '##',
     key: 'heading2',
     keywords: 'h2 subtitle 二级标题 标题 biaoti erji',
     label: 'Heading 2',
@@ -198,6 +218,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: 'H3',
+    group: 'Basic blocks',
+    hint: '###',
     key: 'heading3',
     keywords: 'h3 三级标题 标题 biaoti sanji',
     label: 'Heading 3',
@@ -217,6 +240,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '•',
+    group: 'Lists',
+    hint: '-',
     key: 'bulletList',
     keywords: 'ul unordered 无序列表 列表 liebiao wuxu',
     label: 'Bullet list',
@@ -225,6 +251,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '1.',
+    group: 'Lists',
+    hint: '1.',
     key: 'orderedList',
     keywords: 'ol numbered 有序列表 列表 liebiao youxu',
     label: 'Ordered list',
@@ -233,6 +262,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '□',
+    group: 'Lists',
+    hint: '[]',
     key: 'taskList',
     keywords: 'todo checkbox check 任务 待办 清单 renwu daiban',
     label: 'Task list',
@@ -241,6 +273,8 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '▦',
+    group: 'Advanced blocks',
     key: 'table',
     keywords: 'grid rows columns 表格 biaoge bg',
     label: 'Table',
@@ -254,6 +288,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '“',
+    group: 'Advanced blocks',
+    hint: '>',
     key: 'quote',
     keywords: 'blockquote citation 引用 yinyong',
     label: 'Quote',
@@ -262,6 +299,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '</>',
+    group: 'Advanced blocks',
+    hint: '```',
     key: 'codeBlock',
     keywords: 'snippet pre fence 代码 代码块 daima',
     label: 'Code block',
@@ -277,6 +317,8 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '!',
+    group: 'Advanced blocks',
     key: 'callout',
     keywords: 'info tip warning danger note 信息块 提示 xinxikuai tishi',
     label: 'Callout',
@@ -285,6 +327,8 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '⌄',
+    group: 'Advanced blocks',
     key: 'details',
     keywords: 'details collapse fold 折叠 zhedie',
     label: 'Toggle',
@@ -293,6 +337,9 @@ const SLASH_MENU_ITEMS: SlashMenuItem[] = [
     },
   },
   {
+    glyph: '—',
+    group: 'Advanced blocks',
+    hint: '---',
     key: 'divider',
     keywords: 'hr horizontal rule separator 分割线 分隔线 fengexian fgx',
     label: 'Divider',
@@ -369,20 +416,47 @@ function RicherSlashMenu({
           No commands found
         </div>
       ) : null}
-      {items.map((item, index) => (
-        <button
-          aria-selected={index === selectedIndex}
-          id={`${menuId}-${item.key}`}
-          key={item.key}
-          onClick={() => item.run(editor, { from: match.from, to: match.to })}
-          onMouseEnter={() => onSelectedIndexChange(index)}
-          onMouseDown={(event) => event.preventDefault()}
-          role="option"
-          type="button"
-        >
-          {item.label}
-        </button>
-      ))}
+      {SLASH_MENU_GROUPS.map((group) => {
+        const groupItems = items.filter((item) => item.group === group);
+
+        if (groupItems.length === 0) {
+          return null;
+        }
+
+        return (
+          <div className="richer-editor__slash-group" key={group}>
+            <div className="richer-editor__slash-group-label">{group}</div>
+            {groupItems.map((item) => {
+              const index = items.indexOf(item);
+
+              return (
+                <button
+                  aria-label={item.label}
+                  aria-selected={index === selectedIndex}
+                  id={`${menuId}-${item.key}`}
+                  key={item.key}
+                  onClick={() =>
+                    item.run(editor, { from: match.from, to: match.to })
+                  }
+                  onMouseEnter={() => onSelectedIndexChange(index)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="option"
+                  type="button"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="richer-editor__slash-glyph"
+                  >
+                    {item.glyph}
+                  </span>
+                  <span>{item.label}</span>
+                  {item.hint ? <kbd aria-hidden="true">{item.hint}</kbd> : null}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -393,7 +467,7 @@ function getSlashMenuStyle(
 ): CSSProperties | undefined {
   try {
     const rect = editor.view.coordsAtPos(position);
-    const menuWidth = 224;
+    const menuWidth = 320;
     const viewportPadding = 8;
     const left = Math.min(
       Math.max(rect.left, viewportPadding),
@@ -530,9 +604,13 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
 function RicherToolbar({
   editable,
   editor,
+  focusMode,
+  onFocusModeChange,
 }: {
   editable: boolean;
   editor: Editor | null;
+  focusMode?: boolean;
+  onFocusModeChange?: () => void;
 }) {
   const state = useEditorState({
     editor,
@@ -721,7 +799,131 @@ function RicherToolbar({
           {'{ }'}
         </span>
       </button>
+      {onFocusModeChange ? (
+        <button
+          aria-label="Focus mode"
+          aria-pressed={focusMode}
+          className="richer-editor__toolbar-focus"
+          disabled={!editable || !editor}
+          onClick={onFocusModeChange}
+          onMouseDown={(event) => event.preventDefault()}
+          type="button"
+        >
+          <span aria-hidden="true">Focus</span>
+        </button>
+      ) : null}
     </div>
+  );
+}
+
+interface RicherOutlineItem {
+  id: string;
+  level: number;
+  position: number;
+  text: string;
+}
+
+function getOutlineState(editor: Editor): {
+  activeId: string | null;
+  items: RicherOutlineItem[];
+} {
+  const items: RicherOutlineItem[] = [];
+  let activeId: string | null = null;
+
+  editor.state.doc.descendants((node, position) => {
+    if (node.type.name !== 'heading' || typeof node.attrs.id !== 'string') {
+      return;
+    }
+
+    const item = {
+      id: node.attrs.id,
+      level: typeof node.attrs.level === 'number' ? node.attrs.level : 1,
+      position,
+      text: node.textContent || 'Untitled heading',
+    };
+
+    items.push(item);
+
+    if (position <= editor.state.selection.from) {
+      activeId = item.id;
+    }
+  });
+
+  return { activeId, items };
+}
+
+function navigateToOutlineItem(editor: Editor, item: RicherOutlineItem): void {
+  const position = Math.min(item.position + 1, editor.state.doc.content.size);
+  const transaction = editor.state.tr
+    .setSelection(Selection.near(editor.state.doc.resolve(position)))
+    .scrollIntoView();
+
+  transaction.setMeta('addToHistory', false);
+  editor.view.dispatch(transaction);
+  editor.view.dom.focus({ preventScroll: true });
+}
+
+function RicherOutline({ editor }: { editor: Editor }) {
+  const contentId = useId();
+  const [open, setOpen] = useState(true);
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => getOutlineState(currentEditor),
+  });
+
+  return (
+    <nav aria-label="Document outline" className="richer-editor__outline">
+      <button
+        aria-controls={contentId}
+        aria-expanded={open}
+        className="richer-editor__outline-toggle"
+        onClick={() => setOpen((current) => !current)}
+        type="button"
+      >
+        <span>Outline</span>
+        <svg
+          aria-hidden="true"
+          fill="none"
+          height="16"
+          viewBox="0 0 16 16"
+          width="16"
+        >
+          <path
+            d={open ? 'M3.5 6 8 10.5 12.5 6' : 'M6 3.5 10.5 8 6 12.5'}
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+          />
+        </svg>
+      </button>
+      {open ? (
+        <div className="richer-editor__outline-content" id={contentId}>
+          {state.items.length > 0 ? (
+            <ol className="richer-editor__outline-list">
+              {state.items.map((item) => (
+                <li data-level={item.level} key={item.id}>
+                  <button
+                    aria-current={
+                      item.id === state.activeId ? 'location' : undefined
+                    }
+                    aria-label={`${item.text}, heading level ${item.level}`}
+                    onClick={() => navigateToOutlineItem(editor, item)}
+                    type="button"
+                  >
+                    {item.text}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="richer-editor__outline-empty">
+              Add a heading to build the outline.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </nav>
   );
 }
 
@@ -942,6 +1144,7 @@ export function RicherEditor({
           'aria-readonly': String(!editable),
           class: 'richer-editor__content',
           role: 'textbox',
+          tabindex: '0',
         },
         handleKeyDown: (_view, event) => slashMenuKeyDownRef.current(event),
       },
@@ -1087,6 +1290,7 @@ export function RicherEditor({
           'aria-readonly': String(!editable),
           class: 'richer-editor__content',
           role: 'textbox',
+          tabindex: '0',
         },
         handleKeyDown: (_view, event) => slashMenuKeyDownRef.current(event),
       },
@@ -1152,10 +1356,21 @@ export function RicherEditor({
   const rootClassName = [
     'richer-editor',
     focusMode && 'richer-editor--focus-mode',
+    features?.outline && 'richer-editor--with-outline',
     className,
   ]
     .filter(Boolean)
     .join(' ');
+  const toggleFocusMode = () => {
+    if (!editor) {
+      return;
+    }
+
+    const enabled = !focusMode;
+
+    setFocusMode(enabled);
+    editor.commands.setFocusMode(enabled);
+  };
 
   return (
     <div
@@ -1179,19 +1394,21 @@ export function RicherEditor({
         <RicherBubbleMenu editor={editor} />
       ) : null}
       {features?.toolbar ? (
-        <RicherToolbar editable={editable} editor={editor} />
+        <RicherToolbar
+          editable={editable}
+          editor={editor}
+          focusMode={focusMode}
+          {...(features.focusMode && editable && editor
+            ? { onFocusModeChange: toggleFocusMode }
+            : {})}
+        />
       ) : null}
-      {features?.focusMode && editable && editor ? (
+      {features?.focusMode && !features.toolbar && editable && editor ? (
         <button
           aria-label="Focus mode"
           aria-pressed={focusMode}
           className="richer-editor__focus-toggle"
-          onClick={() => {
-            const enabled = !focusMode;
-
-            setFocusMode(enabled);
-            editor.commands.setFocusMode(enabled);
-          }}
+          onClick={toggleFocusMode}
           type="button"
         >
           Focus mode
@@ -1213,9 +1430,12 @@ export function RicherEditor({
           selectedIndex={selectedSlashIndex}
         />
       ) : null}
-      <RicherEditorEditableContext.Provider value={editable}>
-        <EditorContent className="richer-editor__body" editor={editor} />
-      </RicherEditorEditableContext.Provider>
+      <div className="richer-editor__workspace">
+        <RicherEditorEditableContext.Provider value={editable}>
+          <EditorContent className="richer-editor__body" editor={editor} />
+        </RicherEditorEditableContext.Provider>
+        {features?.outline && editor ? <RicherOutline editor={editor} /> : null}
+      </div>
     </div>
   );
 }

@@ -66,7 +66,10 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     StarterKit.configure({ codeBlock: false, trailingNode: false }),
     CodeBlockLowlight.configure({ lowlight }),
     TaskList,
-    TaskItem.configure({ nested: true }),
+    TaskItem.configure({
+      nested: true,
+      HTMLAttributes: { class: 'richer-editor__task-item' },
+    }),
     TableKit.configure({ table: { resizable: true } }),
     Callout,
     Details.configure({
