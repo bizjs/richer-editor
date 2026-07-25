@@ -2790,6 +2790,20 @@ describe('RicherEditor public component', () => {
     expect(toggle).toHaveAccessibleName('Collapse details: More information');
   });
 
+  it('aligns a details toggle with its summary line', () => {
+    render(<RicherEditor defaultDocument={makeDetailsDocument()} />);
+
+    const toggle = screen.getByRole('button', {
+      name: 'Expand details: More information',
+    });
+    const summary = toggle.parentElement?.querySelector('summary');
+
+    expect(summary).toBeInstanceOf(HTMLElement);
+    expect(window.getComputedStyle(summary as HTMLElement).lineHeight).toBe(
+      window.getComputedStyle(toggle).height,
+    );
+  });
+
   it('edits a default document in uncontrolled mode', async () => {
     const onChange = vi.fn<(change: TestEditorChange) => void>();
 

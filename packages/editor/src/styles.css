@@ -619,6 +619,10 @@
   min-width: 0;
 }
 
+.richer-editor__content .richer-editor__task-item > div > p {
+  line-height: 1.5;
+}
+
 .richer-editor__content
   .richer-editor__task-item[data-checked='true']
   > div
@@ -674,6 +678,7 @@
 
 .richer-editor__content [data-type='details'] summary {
   font-weight: 600;
+  line-height: 1.5rem;
 }
 
 .richer-editor__content [data-type='detailsContent'] {
