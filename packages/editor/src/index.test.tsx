@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createDocument, RicherEditor, type RicherDocument } from './index';
+import editorStyles from './styles.css?raw';
 
 interface TestEditorChange {
   document: RicherDocument;
@@ -193,6 +194,41 @@ describe('RicherEditor public component', () => {
     expect(
       screen.getByRole('textbox', { name: 'Document editor' }),
     ).toBeInTheDocument();
+  });
+
+  it('keeps table cell height stable when a column resize handle appears', () => {
+    const style = document.createElement('style');
+    const editor = document.createElement('div');
+
+    style.textContent = editorStyles;
+    editor.className = 'richer-editor__content';
+    editor.innerHTML =
+      '<table><tbody><tr><td><p>Cell content</p></td></tr></tbody></table>';
+    document.head.append(style);
+    document.body.append(editor);
+
+    try {
+      const cell = editor.querySelector('td');
+      const content = editor.querySelector('p');
+      const handle = document.createElement('div');
+
+      expect(cell).toBeInstanceOf(HTMLTableCellElement);
+      expect(content).toBeInstanceOf(HTMLParagraphElement);
+      expect(window.getComputedStyle(content as HTMLElement).marginBottom).toBe(
+        '0px',
+      );
+
+      handle.className = 'column-resize-handle';
+      editor.classList.add('resize-cursor');
+      cell?.append(handle);
+
+      expect(window.getComputedStyle(content as HTMLElement).marginBottom).toBe(
+        '0px',
+      );
+    } finally {
+      editor.remove();
+      style.remove();
+    }
   });
 
   it('applies bold formatting from the enabled toolbar', async () => {
@@ -2790,18 +2826,19 @@ describe('RicherEditor public component', () => {
     expect(toggle).toHaveAccessibleName('Collapse details: More information');
   });
 
-  it('aligns a details toggle with its summary line', () => {
+  it('renders a fixed-size SVG details toggle icon', () => {
     render(<RicherEditor defaultDocument={makeDetailsDocument()} />);
 
     const toggle = screen.getByRole('button', {
       name: 'Expand details: More information',
     });
-    const summary = toggle.parentElement?.querySelector('summary');
+    const icon = toggle.querySelector('[aria-hidden="true"]');
 
-    expect(summary).toBeInstanceOf(HTMLElement);
-    expect(window.getComputedStyle(summary as HTMLElement).lineHeight).toBe(
-      window.getComputedStyle(toggle).height,
-    );
+    expect(icon).toBeInstanceOf(SVGElement);
+    expect(icon).toHaveAttribute('viewBox', '0 0 16 16');
+    expect(icon).toHaveAttribute('width', '16');
+    expect(icon).toHaveAttribute('height', '16');
+    expect(toggle).toHaveTextContent('');
   });
 
   it('edits a default document in uncontrolled mode', async () => {

@@ -75,6 +75,31 @@ function createCoreExtensions(generateId?: BlockIdGenerator): Extensions {
     Details.configure({
       persist: false,
       renderToggleButton: ({ element, isOpen, node }) => {
+        if (!element.querySelector('.richer-editor__details-toggle-icon')) {
+          const icon = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'svg',
+          );
+          const path = document.createElementNS(
+            'http://www.w3.org/2000/svg',
+            'path',
+          );
+
+          icon.setAttribute('class', 'richer-editor__details-toggle-icon');
+          icon.setAttribute('aria-hidden', 'true');
+          icon.setAttribute('fill', 'none');
+          icon.setAttribute('height', '16');
+          icon.setAttribute('stroke', 'currentColor');
+          icon.setAttribute('stroke-linecap', 'round');
+          icon.setAttribute('stroke-linejoin', 'round');
+          icon.setAttribute('stroke-width', '1.5');
+          icon.setAttribute('viewBox', '0 0 16 16');
+          icon.setAttribute('width', '16');
+          path.setAttribute('d', 'M5.75 3.5 10.25 8 5.75 12.5');
+          icon.append(path);
+          element.append(icon);
+        }
+
         const summary = node.firstChild?.textContent.trim() || 'details';
 
         element.setAttribute(
