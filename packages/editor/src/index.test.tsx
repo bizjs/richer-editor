@@ -371,6 +371,51 @@ describe('RicherEditor public component', () => {
     }
   });
 
+  it('uses a compact fixed vertical rhythm for document headings', () => {
+    const style = document.createElement('style');
+    const editor = document.createElement('div');
+
+    style.textContent = editorStyles;
+    editor.className = 'richer-editor richer-editor__content';
+    editor.innerHTML = `
+      <p>Introduction</p>
+      <h1>Document title</h1>
+      <h2>Adjacent section</h2>
+      <p>Section content</p>
+      <h3>Nested section</h3>
+    `;
+    document.head.append(style);
+    document.body.append(editor);
+
+    try {
+      const heading1 = editor.querySelector('h1');
+      const heading2 = editor.querySelector('h2');
+      const heading3 = editor.querySelector('h3');
+
+      expect(window.getComputedStyle(heading1 as HTMLElement).fontSize).toBe(
+        '2rem',
+      );
+      expect(window.getComputedStyle(heading1 as HTMLElement).marginTop).toBe(
+        '1.75rem',
+      );
+      expect(window.getComputedStyle(heading2 as HTMLElement).fontSize).toBe(
+        '1.5rem',
+      );
+      expect(window.getComputedStyle(heading2 as HTMLElement).marginTop).toBe(
+        '0.875rem',
+      );
+      expect(window.getComputedStyle(heading3 as HTMLElement).fontSize).toBe(
+        '1.25rem',
+      );
+      expect(window.getComputedStyle(heading3 as HTMLElement).marginTop).toBe(
+        '1.25rem',
+      );
+    } finally {
+      editor.remove();
+      style.remove();
+    }
+  });
+
   it('keeps table handles compact while covering their row and column edges', () => {
     const style = document.createElement('style');
     const controls = document.createElement('div');
@@ -2530,6 +2575,7 @@ describe('RicherEditor public component', () => {
     const outline = screen.getByRole('navigation', {
       name: 'Document outline',
     });
+    const panel = outline.querySelector('.richer-editor__outline-panel');
     const title = within(outline).getByRole('button', {
       name: 'Document title, heading level 1',
     });
@@ -2537,6 +2583,8 @@ describe('RicherEditor public component', () => {
       name: 'Details, heading level 3',
     });
 
+    expect(panel).toBeInTheDocument();
+    expect(panel).toContainElement(title);
     expect(title).toHaveAttribute('aria-current', 'location');
     expect(details).not.toHaveAttribute('aria-current');
     expect(outline).not.toHaveTextContent('Introduction');

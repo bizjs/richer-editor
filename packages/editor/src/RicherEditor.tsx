@@ -1509,56 +1509,58 @@ function RicherOutline({ editor }: { editor: Editor }) {
 
   return (
     <nav aria-label="Document outline" className="richer-editor__outline">
-      <button
-        aria-controls={contentId}
-        aria-expanded={open}
-        className="richer-editor__outline-toggle"
-        onClick={() => setOpen((current) => !current)}
-        type="button"
-      >
-        <span>Outline</span>
-        <svg
-          aria-hidden="true"
-          fill="none"
-          height="16"
-          viewBox="0 0 16 16"
-          width="16"
+      <div className="richer-editor__outline-panel">
+        <button
+          aria-controls={contentId}
+          aria-expanded={open}
+          className="richer-editor__outline-toggle"
+          onClick={() => setOpen((current) => !current)}
+          type="button"
         >
-          <path
-            d={open ? 'M3.5 6 8 10.5 12.5 6' : 'M6 3.5 10.5 8 6 12.5'}
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </button>
-      {open ? (
-        <div className="richer-editor__outline-content" id={contentId}>
-          {state.items.length > 0 ? (
-            <ol className="richer-editor__outline-list">
-              {state.items.map((item) => (
-                <li data-level={item.level} key={item.id}>
-                  <button
-                    aria-current={
-                      item.id === state.activeId ? 'location' : undefined
-                    }
-                    aria-label={`${item.text}, heading level ${item.level}`}
-                    onClick={() => navigateToOutlineItem(editor, item)}
-                    type="button"
-                  >
-                    {item.text}
-                  </button>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="richer-editor__outline-empty">
-              Add a heading to build the outline.
-            </p>
-          )}
-        </div>
-      ) : null}
+          <span>Outline</span>
+          <svg
+            aria-hidden="true"
+            fill="none"
+            height="16"
+            viewBox="0 0 16 16"
+            width="16"
+          >
+            <path
+              d={open ? 'M3.5 6 8 10.5 12.5 6' : 'M6 3.5 10.5 8 6 12.5'}
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+            />
+          </svg>
+        </button>
+        {open ? (
+          <div className="richer-editor__outline-content" id={contentId}>
+            {state.items.length > 0 ? (
+              <ol className="richer-editor__outline-list">
+                {state.items.map((item) => (
+                  <li data-level={item.level} key={item.id}>
+                    <button
+                      aria-current={
+                        item.id === state.activeId ? 'location' : undefined
+                      }
+                      aria-label={`${item.text}, heading level ${item.level}`}
+                      onClick={() => navigateToOutlineItem(editor, item)}
+                      type="button"
+                    >
+                      {item.text}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="richer-editor__outline-empty">
+                Add a heading to build the outline.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </div>
     </nav>
   );
 }
