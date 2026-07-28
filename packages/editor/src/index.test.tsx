@@ -782,6 +782,36 @@ describe('RicherEditor public component', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('renders compact, consistently sized vector icons in the formatting toolbar', () => {
+    const style = document.createElement('style');
+
+    style.textContent = editorStyles;
+    document.head.append(style);
+
+    try {
+      render(
+        <RicherEditor
+          defaultDocument={makeDocument('Draft', 'block-toolbar-icons')}
+          features={{ focusMode: true, toolbar: true }}
+        />,
+      );
+
+      const toolbar = screen.getByRole('toolbar', { name: 'Formatting' });
+      const boldButton = within(toolbar).getByRole('button', { name: 'Bold' });
+      const icons = toolbar.querySelectorAll('svg.richer-editor__toolbar-icon');
+
+      expect(icons).toHaveLength(14);
+      expect(window.getComputedStyle(boldButton).minWidth).toBe('1.875rem');
+      expect(window.getComputedStyle(boldButton).minHeight).toBe('1.875rem');
+      expect(window.getComputedStyle(icons[0] as SVGElement).width).toBe(
+        '0.875rem',
+      );
+      expect(icons[0]).toHaveAttribute('stroke-width', '1.5');
+    } finally {
+      style.remove();
+    }
+  });
+
   it('applies bold formatting from the enabled toolbar', async () => {
     const onChange = vi.fn<(change: TestEditorChange) => void>();
 

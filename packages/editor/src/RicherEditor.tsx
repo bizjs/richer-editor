@@ -11,6 +11,7 @@ import {
   type CSSProperties,
   type HTMLAttributes,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
 } from 'react';
 
 import {
@@ -1144,6 +1145,118 @@ function RicherTableMenu({ editor }: { editor: Editor }) {
   );
 }
 
+type ToolbarIconName =
+  | 'blockquote'
+  | 'bold'
+  | 'bulletList'
+  | 'callout'
+  | 'clearFormatting'
+  | 'codeBlock'
+  | 'focus'
+  | 'heading2'
+  | 'inlineCode'
+  | 'italic'
+  | 'orderedList'
+  | 'strike'
+  | 'taskList'
+  | 'underline';
+
+function ToolbarIcon({ name }: { name: ToolbarIconName }) {
+  let content: ReactNode = null;
+
+  switch (name) {
+    case 'bold':
+      content = (
+        <path d="M6.25 3.75h4.2a3 3 0 0 1 0 6h-4.2zm0 6h4.75a3.25 3.25 0 0 1 0 6.5H6.25z" />
+      );
+      break;
+    case 'italic':
+      content = <path d="M8 4h6M6 16h6m-1-12L9 16" />;
+      break;
+    case 'underline':
+      content = <path d="M5.75 4v5a4.25 4.25 0 0 0 8.5 0V4M4.5 16h11" />;
+      break;
+    case 'strike':
+      content = (
+        <path d="M13.75 6.25C13 4.75 11.7 4 10 4 7.85 4 6.5 5.05 6.5 6.65c0 1.45 1.1 2.2 3.75 3.05 2.35.75 3.25 1.45 3.25 2.9 0 1.75-1.45 2.9-3.65 2.9-1.9 0-3.35-.8-4.1-2.35M4 10h12" />
+      );
+      break;
+    case 'inlineCode':
+      content = (
+        <path d="m7.25 5.75-4 4.25 4 4.25m5.5-8.5 4 4.25-4 4.25M11.25 4 8.75 16" />
+      );
+      break;
+    case 'clearFormatting':
+      content = (
+        <path d="m4.2 11.7 6.95-6.95a1.5 1.5 0 0 1 2.1 0l2 2a1.5 1.5 0 0 1 0 2.1L8.1 16H6.5l-2.3-2.2a1.5 1.5 0 0 1 0-2.1ZM9 16h7M8.3 7.6l4.1 4.1" />
+      );
+      break;
+    case 'heading2':
+      content = (
+        <path d="M3.5 4v12m7-12v12m-7-6h7m2.25 1.1c.25-1.05 1-1.6 2-1.6 1.05 0 1.75.6 1.75 1.5 0 .75-.45 1.3-1.5 2.2l-2.25 1.9h4" />
+      );
+      break;
+    case 'bulletList':
+      content = (
+        <>
+          <circle cx="4" cy="6" fill="currentColor" r="1" stroke="none" />
+          <circle cx="4" cy="14" fill="currentColor" r="1" stroke="none" />
+          <path d="M8 6h8M8 14h8" />
+        </>
+      );
+      break;
+    case 'orderedList':
+      content = (
+        <path d="M3.5 4.5h1v4m-1 0h2m-2 4.25c.2-.75.75-1.15 1.4-1.15.75 0 1.25.45 1.25 1.05 0 .5-.3.85-1 1.4L3.5 15.5h2.75M9 6h7M9 14h7" />
+      );
+      break;
+    case 'taskList':
+      content = (
+        <path d="M3.5 4.5h4v4h-4zm0 7h4v4h-4zM10 6.5h6m-6 7h6M4.6 6.4l.75.75 1.6-1.8" />
+      );
+      break;
+    case 'blockquote':
+      content = (
+        <path d="M4 5.5h5v4.25c0 2.75-1.25 4.25-3.75 4.75M11 5.5h5v4.25c0 2.75-1.25 4.25-3.75 4.75" />
+      );
+      break;
+    case 'callout':
+      content = (
+        <>
+          <circle cx="10" cy="10" r="7" />
+          <path d="M10 6.5v4.25" />
+          <circle cx="10" cy="14" fill="currentColor" r="0.9" stroke="none" />
+        </>
+      );
+      break;
+    case 'codeBlock':
+      content = (
+        <path d="M7.5 3.5H6.25c-1 0-1.5.5-1.5 1.5v2.5c0 1-.5 1.75-1.5 2.5 1 .75 1.5 1.5 1.5 2.5V15c0 1 .5 1.5 1.5 1.5H7.5m5-13h1.25c1 0 1.5.5 1.5 1.5v2.5c0 1 .5 1.75 1.5 2.5-1 .75-1.5 1.5-1.5 2.5V15c0 1-.5 1.5-1.5 1.5H12.5" />
+      );
+      break;
+    case 'focus':
+      content = (
+        <path d="M7 3.5H3.5V7m9.5-3.5h3.5V7M7 16.5H3.5V13m9.5 3.5h3.5V13" />
+      );
+      break;
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="richer-editor__toolbar-icon"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 20 20"
+    >
+      {content}
+    </svg>
+  );
+}
+
 function RicherToolbar({
   editable,
   editor,
@@ -1201,7 +1314,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <strong aria-hidden="true">B</strong>
+        <ToolbarIcon name="bold" />
       </button>
       <button
         aria-label="Italic"
@@ -1211,7 +1324,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <em aria-hidden="true">I</em>
+        <ToolbarIcon name="italic" />
       </button>
       <button
         aria-label="Underline"
@@ -1221,9 +1334,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-underline" aria-hidden="true">
-          U
-        </span>
+        <ToolbarIcon name="underline" />
       </button>
       <button
         aria-label="Strikethrough"
@@ -1233,7 +1344,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <s aria-hidden="true">S</s>
+        <ToolbarIcon name="strike" />
       </button>
       <button
         aria-label="Inline code"
@@ -1243,9 +1354,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-code" aria-hidden="true">
-          {'</>'}
-        </span>
+        <ToolbarIcon name="inlineCode" />
       </button>
       <button
         aria-label="Clear formatting"
@@ -1254,9 +1363,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-text" aria-hidden="true">
-          Clear
-        </span>
+        <ToolbarIcon name="clearFormatting" />
       </button>
       <button
         aria-label="Heading 2"
@@ -1266,9 +1373,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-text" aria-hidden="true">
-          H2
-        </span>
+        <ToolbarIcon name="heading2" />
       </button>
       <button
         aria-label="Bulleted list"
@@ -1278,9 +1383,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-list" aria-hidden="true">
-          • —
-        </span>
+        <ToolbarIcon name="bulletList" />
       </button>
       <button
         aria-label="Ordered list"
@@ -1290,9 +1393,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-list" aria-hidden="true">
-          1. —
-        </span>
+        <ToolbarIcon name="orderedList" />
       </button>
       <button
         aria-label="Task list"
@@ -1302,9 +1403,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-list" aria-hidden="true">
-          □ —
-        </span>
+        <ToolbarIcon name="taskList" />
       </button>
       <button
         aria-label="Blockquote"
@@ -1314,9 +1413,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-quote" aria-hidden="true">
-          “
-        </span>
+        <ToolbarIcon name="blockquote" />
       </button>
       <button
         aria-label="Callout"
@@ -1326,9 +1423,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-callout" aria-hidden="true">
-          !
-        </span>
+        <ToolbarIcon name="callout" />
       </button>
       <button
         aria-label="Code block"
@@ -1338,9 +1433,7 @@ function RicherToolbar({
         onMouseDown={(event) => event.preventDefault()}
         type="button"
       >
-        <span className="richer-editor__toolbar-code" aria-hidden="true">
-          {'{ }'}
-        </span>
+        <ToolbarIcon name="codeBlock" />
       </button>
       {onFocusModeChange ? (
         <button
@@ -1352,7 +1445,7 @@ function RicherToolbar({
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          <span aria-hidden="true">Focus</span>
+          <ToolbarIcon name="focus" />
         </button>
       ) : null}
     </div>
