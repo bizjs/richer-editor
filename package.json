@@ -8,7 +8,7 @@
     "node": "^22.18.0 || >=24.11.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @bizjs/richer-editor build && pnpm --parallel --filter @bizjs/richer-editor --filter @bizjs/richer-editor-playground dev",
+    "dev": "pnpm --filter @bizjs/richer-editor-playground dev",
     "build": "pnpm --filter @bizjs/richer-editor build && pnpm --filter @bizjs/richer-editor-playground build",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "oxlint .",

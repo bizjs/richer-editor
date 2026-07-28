@@ -58,6 +58,67 @@ function makeDetailsDocument(): RicherDocument {
   });
 }
 
+function makeTableDocument(withIntro = false): RicherDocument {
+  const cell = (
+    type: 'tableCell' | 'tableHeader',
+    id: string,
+    text: string,
+  ) => ({
+    type,
+    attrs: {
+      id,
+      align: null,
+      colspan: 1,
+      colwidth: null,
+      rowspan: 1,
+    },
+    content: [
+      {
+        type: 'paragraph',
+        attrs: { id: `${id}-paragraph`, textAlign: null },
+        content: [{ type: 'text', text }],
+      },
+    ],
+  });
+
+  return createDocument({
+    type: 'doc',
+    content: [
+      ...(withIntro
+        ? [
+            {
+              type: 'paragraph',
+              attrs: { id: 'table-intro', textAlign: null },
+              content: [{ type: 'text', text: 'Before the table' }],
+            },
+          ]
+        : []),
+      {
+        type: 'table',
+        attrs: { id: 'table' },
+        content: [
+          {
+            type: 'tableRow',
+            attrs: { id: 'table-header-row' },
+            content: [
+              cell('tableHeader', 'table-header-name', 'Name'),
+              cell('tableHeader', 'table-header-state', 'State'),
+            ],
+          },
+          {
+            type: 'tableRow',
+            attrs: { id: 'table-body-row' },
+            content: [
+              cell('tableCell', 'table-cell-name', 'TableKit'),
+              cell('tableCell', 'table-cell-state', 'Registered'),
+            ],
+          },
+        ],
+      },
+    ],
+  });
+}
+
 function makeCodeDocument(
   language = 'javascript',
   text = 'const answer = 42',
@@ -187,6 +248,49 @@ function selectEditorContents(editor: HTMLElement): void {
   document.dispatchEvent(new Event('selectionchange'));
 }
 
+function selectTableElement(editor: HTMLElement): void {
+  const table = editor.querySelector('table');
+  const selection = window.getSelection();
+
+  if (!table || !selection) {
+    throw new Error('Expected the editor to contain a selectable table.');
+  }
+
+  const range = document.createRange();
+
+  editor.focus();
+  range.selectNode(table);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  document.dispatchEvent(new Event('selectionchange'));
+}
+
+async function openTableHandleMenu(
+  editor: HTMLElement,
+  handle: 'Column' | 'Row',
+  index = 0,
+): Promise<HTMLElement> {
+  selectText(editor, 0, 1);
+  const handles = await screen.findAllByRole('button', {
+    name: `${handle} actions`,
+  });
+  const target = handles[index];
+
+  if (!target) {
+    throw new Error(`Expected ${handle.toLowerCase()} handle ${index}.`);
+  }
+
+  fireEvent.click(target);
+
+  return screen.findByRole('menu', { name: `${handle} actions` });
+}
+
+async function openTableSettings(editor: HTMLElement): Promise<HTMLElement> {
+  selectText(editor, 0, 1);
+
+  return screen.findByRole('toolbar', { name: 'Table settings' });
+}
+
 describe('RicherEditor public component', () => {
   it('renders an accessible editor surface', () => {
     render(<RicherEditor />);
@@ -229,6 +333,453 @@ describe('RicherEditor public component', () => {
       editor.remove();
       style.remove();
     }
+  });
+
+  it('keeps Latin and Chinese table content at the same line height', () => {
+    const style = document.createElement('style');
+    const editor = document.createElement('div');
+
+    style.textContent = editorStyles;
+    editor.className = 'richer-editor__content';
+    editor.innerHTML = `
+      <table>
+        <tbody>
+          <tr>
+            <td><p>TableKit</p></td>
+            <td><p>中文内容</p></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    document.head.append(style);
+    document.body.append(editor);
+
+    try {
+      const [latinCell, chineseCell] = editor.querySelectorAll('td');
+
+      expect(latinCell).toBeInstanceOf(HTMLTableCellElement);
+      expect(chineseCell).toBeInstanceOf(HTMLTableCellElement);
+      expect(
+        window.getComputedStyle(latinCell as HTMLTableCellElement).lineHeight,
+      ).toBe('1.5');
+      expect(
+        window.getComputedStyle(chineseCell as HTMLTableCellElement).lineHeight,
+      ).toBe('1.5');
+    } finally {
+      editor.remove();
+      style.remove();
+    }
+  });
+
+  it('keeps table handles compact while covering their row and column edges', () => {
+    const style = document.createElement('style');
+    const controls = document.createElement('div');
+
+    style.textContent = editorStyles;
+    controls.className = 'richer-editor';
+    controls.innerHTML = `
+      <div class="richer-editor__table-handle richer-editor__table-handle--row">
+        <button class="richer-editor__table-handle-trigger"></button>
+      </div>
+      <div class="richer-editor__table-handle richer-editor__table-handle--column">
+        <button class="richer-editor__table-handle-trigger richer-editor__table-handle-trigger--column"></button>
+      </div>
+    `;
+    document.head.append(style);
+    document.body.append(controls);
+
+    try {
+      const rowEdge = controls.children[0] as HTMLElement;
+      const rowTrigger = rowEdge.querySelector('button');
+      const columnEdge = controls.children[1] as HTMLElement;
+      const columnTrigger = columnEdge.querySelector('button');
+
+      expect(window.getComputedStyle(rowEdge).width).toBe('1rem');
+      expect(window.getComputedStyle(rowTrigger as HTMLElement).height).toBe(
+        '100%',
+      );
+      expect(
+        window.getComputedStyle(rowTrigger as HTMLElement).borderTopWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(rowTrigger as HTMLElement).borderRightWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(rowTrigger as HTMLElement).borderBottomWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(rowTrigger as HTMLElement).borderLeftWidth,
+      ).toBe('1px');
+      expect(window.getComputedStyle(columnEdge).height).toBe('1rem');
+      expect(window.getComputedStyle(columnTrigger as HTMLElement).width).toBe(
+        '100%',
+      );
+      expect(
+        window.getComputedStyle(columnTrigger as HTMLElement).borderTopWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(columnTrigger as HTMLElement).borderRightWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(columnTrigger as HTMLElement).borderBottomWidth,
+      ).toBe('1px');
+      expect(
+        window.getComputedStyle(columnTrigger as HTMLElement).borderLeftWidth,
+      ).toBe('1px');
+    } finally {
+      controls.remove();
+      style.remove();
+    }
+  });
+
+  it('layers table handles below floating controls and open menus above them', () => {
+    const style = document.createElement('style');
+    const controls = document.createElement('div');
+
+    style.textContent = editorStyles;
+    controls.innerHTML = `
+      <div class="richer-editor__table-handle"></div>
+      <div class="richer-editor__table-settings"></div>
+      <div class="richer-editor__table-handle richer-editor__table-handle--open"></div>
+    `;
+    document.head.append(style);
+    document.body.append(controls);
+
+    try {
+      const rowOrColumnHandle = controls.children[0] as HTMLElement;
+      const floatingToolbar = controls.children[1] as HTMLElement;
+      const openHandle = controls.children[2] as HTMLElement;
+
+      expect(window.getComputedStyle(rowOrColumnHandle).position).toBe('fixed');
+      expect(window.getComputedStyle(rowOrColumnHandle).zIndex).toBe('10');
+      expect(window.getComputedStyle(floatingToolbar).zIndex).toBe('40');
+      expect(window.getComputedStyle(openHandle).zIndex).toBe('50');
+    } finally {
+      controls.remove();
+      style.remove();
+    }
+  });
+
+  it('shows table settings and only row and column handles around the table', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    selectText(editor, 0, 1);
+
+    expect(
+      await screen.findByRole('toolbar', { name: 'Table settings' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Row actions' })).toHaveLength(
+      2,
+    );
+    expect(
+      screen.getAllByRole('button', { name: 'Column actions' }),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole('button', { name: 'Table controls' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('toolbar', { name: 'Table actions' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows attached table handles as soon as a cell is clicked', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument(true)} />);
+
+    expect(
+      screen.queryByRole('toolbar', { name: 'Table settings' }),
+    ).not.toBeInTheDocument();
+
+    const cell = screen.getByRole('cell', { name: 'TableKit' });
+
+    cell.addEventListener('click', (event) => event.stopPropagation(), {
+      once: true,
+    });
+    fireEvent.click(cell);
+
+    expect(
+      await screen.findByRole('toolbar', { name: 'Table settings' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Row actions' })).toHaveLength(
+      2,
+    );
+    expect(
+      screen.getAllByRole('button', { name: 'Column actions' }),
+    ).toHaveLength(2);
+  });
+
+  it('shows table handles when the initial selection is inside a table', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    expect(
+      await screen.findByRole('toolbar', { name: 'Table settings' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Row actions' })).toHaveLength(
+      2,
+    );
+    expect(
+      screen.getAllByRole('button', { name: 'Column actions' }),
+    ).toHaveLength(2);
+  });
+
+  it('shows table controls for a collapsed caret inside a cell', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    setCaretOffset(editor, 1);
+
+    expect(
+      await screen.findByRole('toolbar', { name: 'Table settings' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Row actions' })).toHaveLength(
+      2,
+    );
+    expect(
+      screen.getAllByRole('button', { name: 'Column actions' }),
+    ).toHaveLength(2);
+  });
+
+  it('shows table settings when the whole table is selected', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+
+    selectTableElement(editor);
+
+    expect(
+      await screen.findByRole('toolbar', { name: 'Table settings' }),
+    ).toBeInTheDocument();
+  });
+
+  it('closes a table handle menu with Escape and restores handle focus', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Row');
+    const deleteRow = within(menu).getByRole('menuitem', {
+      name: 'Delete row',
+    });
+
+    deleteRow.focus();
+    fireEvent.keyDown(deleteRow, { key: 'Escape' });
+
+    expect(
+      screen.queryByRole('menu', { name: 'Row actions' }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getAllByRole('button', { name: 'Row actions' })[0],
+      ).toHaveFocus();
+    });
+  });
+
+  it('adds a row below the active table cell', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Row');
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Add row below' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) => row.textContent),
+      ).toEqual(['NameState', '', 'TableKitRegistered']);
+    });
+  });
+
+  it('adds a row above the active table cell', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Row');
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Add row above' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) => row.textContent),
+      ).toEqual(['', 'NameState', 'TableKitRegistered']);
+    });
+  });
+
+  it('adds a column to the left of the active table cell', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Column');
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Add column left' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) =>
+          [...row.children].map((cell) => cell.textContent),
+        ),
+      ).toEqual([
+        ['', 'Name', 'State'],
+        ['', 'TableKit', 'Registered'],
+      ]);
+    });
+  });
+
+  it('adds a column to the right of the active table cell', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Column');
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Add column right' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) =>
+          [...row.children].map((cell) => cell.textContent),
+        ),
+      ).toEqual([
+        ['Name', '', 'State'],
+        ['TableKit', '', 'Registered'],
+      ]);
+    });
+  });
+
+  it('deletes the active table row', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Row');
+
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'Delete row' }));
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) => row.textContent),
+      ).toEqual(['TableKitRegistered']);
+    });
+  });
+
+  it('targets the row represented by each visible row handle', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Row', 1);
+
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'Delete row' }));
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) => row.textContent),
+      ).toEqual(['NameState']);
+    });
+  });
+
+  it('deletes the active table column', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Column');
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Delete column' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) =>
+          [...row.children].map((cell) => cell.textContent),
+        ),
+      ).toEqual([['State'], ['Registered']]);
+    });
+  });
+
+  it('targets the column represented by each visible column handle', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableHandleMenu(editor, 'Column', 1);
+
+    fireEvent.click(
+      within(menu).getByRole('menuitem', { name: 'Delete column' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        [...editor.querySelectorAll('tr')].map((row) =>
+          [...row.children].map((cell) => cell.textContent),
+        ),
+      ).toEqual([['Name'], ['TableKit']]);
+    });
+  });
+
+  it('deletes the active table', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const menu = await openTableSettings(editor);
+
+    fireEvent.click(within(menu).getByRole('button', { name: 'Delete table' }));
+
+    await waitFor(() => {
+      expect(editor.querySelector('table')).not.toBeInTheDocument();
+    });
+  });
+
+  it('toggles the table header row from the table settings toolbar', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const toolbar = await openTableSettings(editor);
+
+    fireEvent.click(
+      within(toolbar).getByRole('button', { name: 'Toggle header row' }),
+    );
+
+    await waitFor(() => {
+      expect(editor.querySelectorAll('th')).toHaveLength(0);
+    });
+  });
+
+  it('toggles the table header column from the table settings toolbar', async () => {
+    render(<RicherEditor defaultDocument={makeTableDocument()} />);
+
+    const editor = screen.getByRole('textbox', { name: 'Document editor' });
+    const toolbar = await openTableSettings(editor);
+
+    fireEvent.click(
+      within(toolbar).getByRole('button', { name: 'Toggle header column' }),
+    );
+
+    await waitFor(() => {
+      expect(
+        editor.querySelector('tbody tr:nth-child(2) th'),
+      ).toHaveTextContent('TableKit');
+    });
+  });
+
+  it('does not expose table actions in a read-only editor', () => {
+    render(
+      <RicherEditor defaultDocument={makeTableDocument()} editable={false} />,
+    );
+
+    expect(
+      screen.queryByRole('toolbar', { name: 'Table settings' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Row actions' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Column actions' }),
+    ).not.toBeInTheDocument();
   });
 
   it('applies bold formatting from the enabled toolbar', async () => {

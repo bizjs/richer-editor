@@ -10,6 +10,7 @@ import {
   useState,
   type CSSProperties,
   type HTMLAttributes,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 
 import {
@@ -523,7 +524,157 @@ const shouldShowSelectionMenu: NonNullable<BubbleMenuProps['shouldShow']> = ({
   editor,
   from,
   to,
-}) => editor.isEditable && from !== to;
+}) => editor.isEditable && !editor.isActive('table') && from !== to;
+
+interface TableControlRect {
+  height: number;
+  left: number;
+  right: number;
+  top: number;
+  width: number;
+}
+
+interface TableControlGeometry {
+  columns: TableHandleGeometry[];
+  rows: TableHandleGeometry[];
+  table: TableControlRect;
+}
+
+interface TableHandleGeometry {
+  cell: HTMLElement;
+  rect: TableControlRect;
+}
+
+interface OpenTableHandle {
+  index: number;
+  type: 'column' | 'row';
+}
+
+function getTableControlRect(element: HTMLElement): TableControlRect {
+  const rect = element.getBoundingClientRect();
+
+  return {
+    height: rect.height,
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    width: rect.width,
+  };
+}
+
+function selectTableHandleCell(editor: Editor, cell: HTMLElement): void {
+  const position = editor.view.posAtDOM(cell, 0);
+  const selection = Selection.near(editor.state.doc.resolve(position), 1);
+
+  editor.view.dispatch(editor.state.tr.setSelection(selection));
+}
+
+function isOpenTableHandle(
+  openHandle: OpenTableHandle | null,
+  type: OpenTableHandle['type'],
+  index: number,
+): boolean {
+  return openHandle?.type === type && openHandle.index === index;
+}
+
+function getActiveTableElement(
+  editor: Editor,
+  target: 'cell' | 'row' | 'table',
+): HTMLElement | null {
+  const { $from } = editor.state.selection;
+  let cell: HTMLElement | null = null;
+
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+
+    if (node.type.name !== 'tableCell' && node.type.name !== 'tableHeader') {
+      continue;
+    }
+
+    const cellDom = editor.view.nodeDOM($from.before(depth));
+    const cellElement =
+      cellDom instanceof HTMLElement ? cellDom : cellDom?.parentElement;
+
+    cell =
+      cellElement?.matches('td, th') === true
+        ? cellElement
+        : (cellElement?.closest<HTMLElement>('td, th') ?? null);
+    break;
+  }
+
+  if (!cell) {
+    const domAtSelection = editor.view.domAtPos(
+      editor.state.selection.from,
+    ).node;
+    const selectionElement =
+      domAtSelection instanceof HTMLElement
+        ? domAtSelection
+        : domAtSelection.parentElement;
+
+    cell =
+      selectionElement?.closest<HTMLElement>('td, th') ??
+      selectionElement?.querySelector<HTMLElement>('td, th') ??
+      null;
+  }
+
+  return getTableElementFromCell(cell ?? null, target);
+}
+
+function getTableElementFromCell(
+  cell: HTMLElement | null,
+  target: 'cell' | 'row' | 'table',
+): HTMLElement | null {
+  if (target === 'cell') {
+    return cell;
+  }
+
+  if (target === 'row') {
+    return cell?.closest<HTMLElement>('tr') ?? null;
+  }
+
+  return cell?.closest<HTMLElement>('table') ?? null;
+}
+
+function handleTableActionMenuKeyDown(
+  event: ReactKeyboardEvent<HTMLDivElement>,
+  close: () => void,
+): void {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    close();
+    return;
+  }
+
+  const items = [
+    ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+      '[role="menuitem"]:not(:disabled)',
+    ),
+  ];
+
+  if (items.length === 0) {
+    return;
+  }
+
+  const currentIndex = items.indexOf(
+    document.activeElement as HTMLButtonElement,
+  );
+  let nextIndex: number | null = null;
+
+  if (event.key === 'ArrowDown') {
+    nextIndex = (currentIndex + 1) % items.length;
+  } else if (event.key === 'ArrowUp') {
+    nextIndex = (currentIndex - 1 + items.length) % items.length;
+  } else if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = items.length - 1;
+  }
+
+  if (nextIndex !== null) {
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  }
+}
 
 function RicherBubbleMenu({ editor }: { editor: Editor }) {
   const state = useEditorState({
@@ -598,6 +749,398 @@ function RicherBubbleMenu({ editor }: { editor: Editor }) {
         </button>
       </div>
     </BubbleMenu>
+  );
+}
+
+function RicherTableMenu({ editor }: { editor: Editor }) {
+  const [activeCell, setActiveCell] = useState<HTMLElement | null>(null);
+  const [geometry, setGeometry] = useState<TableControlGeometry | null>(null);
+  const [openHandle, setOpenHandle] = useState<OpenTableHandle | null>(null);
+  const handleRefs = useRef(new Map<string, HTMLButtonElement>());
+  const restoreHandleFocusRef = useRef<string | null>(null);
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => ({
+      canAddColumnAfter: currentEditor.can().addColumnAfter(),
+      canAddColumnBefore: currentEditor.can().addColumnBefore(),
+      canAddRowAfter: currentEditor.can().addRowAfter(),
+      canAddRowBefore: currentEditor.can().addRowBefore(),
+      canDeleteColumn: currentEditor.can().deleteColumn(),
+      canDeleteRow: currentEditor.can().deleteRow(),
+      canDeleteTable: currentEditor.can().deleteTable(),
+      canToggleHeaderColumn: currentEditor.can().toggleHeaderColumn(),
+      canToggleHeaderRow: currentEditor.can().toggleHeaderRow(),
+    }),
+  });
+
+  useEffect(() => {
+    let focusTimer: number | null = null;
+    const updateActiveCell = () => {
+      const cell = getActiveTableElement(editor, 'cell');
+
+      setActiveCell(cell);
+      setOpenHandle(null);
+    };
+    const updateActiveCellAfterFocus = () => {
+      focusTimer = window.setTimeout(updateActiveCell, 0);
+    };
+    const handleTableInteraction = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const cell = target?.closest<HTMLElement>('td, th') ?? null;
+
+      setActiveCell(cell && editor.view.dom.contains(cell) ? cell : null);
+      setOpenHandle(null);
+    };
+
+    updateActiveCell();
+    editor.view.dom.addEventListener('click', handleTableInteraction, true);
+    editor.view.dom.addEventListener(
+      'pointerdown',
+      handleTableInteraction,
+      true,
+    );
+    editor.on('focus', updateActiveCellAfterFocus);
+    editor.on('selectionUpdate', updateActiveCell);
+
+    return () => {
+      if (focusTimer !== null) {
+        window.clearTimeout(focusTimer);
+      }
+
+      editor.view.dom.removeEventListener(
+        'click',
+        handleTableInteraction,
+        true,
+      );
+      editor.view.dom.removeEventListener(
+        'pointerdown',
+        handleTableInteraction,
+        true,
+      );
+      editor.off('focus', updateActiveCellAfterFocus);
+      editor.off('selectionUpdate', updateActiveCell);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!activeCell?.isConnected) {
+      setGeometry(null);
+      return;
+    }
+
+    const updateGeometry = () => {
+      const table = getTableElementFromCell(activeCell, 'table');
+
+      if (!activeCell.isConnected || !table) {
+        setGeometry(null);
+        return;
+      }
+
+      const rowElements = [...table.querySelectorAll<HTMLElement>('tr')];
+      const firstRow = rowElements[0];
+      const columnCells = firstRow
+        ? [...firstRow.children].filter(
+            (child): child is HTMLElement =>
+              child instanceof HTMLElement && child.matches('td, th'),
+          )
+        : [];
+
+      setGeometry({
+        columns: columnCells.map((cell) => ({
+          cell,
+          rect: getTableControlRect(cell),
+        })),
+        rows: rowElements.flatMap((row) => {
+          const cell = [...row.children].find(
+            (child): child is HTMLElement =>
+              child instanceof HTMLElement && child.matches('td, th'),
+          );
+
+          return cell ? [{ cell, rect: getTableControlRect(row) }] : [];
+        }),
+        table: getTableControlRect(table),
+      });
+    };
+
+    updateGeometry();
+    window.addEventListener('resize', updateGeometry);
+    window.addEventListener('scroll', updateGeometry, true);
+
+    return () => {
+      window.removeEventListener('resize', updateGeometry);
+      window.removeEventListener('scroll', updateGeometry, true);
+    };
+  }, [activeCell]);
+
+  useEffect(() => {
+    const target = restoreHandleFocusRef.current;
+
+    if (openHandle !== null || !target) {
+      return;
+    }
+
+    restoreHandleFocusRef.current = null;
+
+    const timer = window.setTimeout(() => {
+      handleRefs.current.get(target)?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [openHandle]);
+
+  if (!activeCell?.isConnected || !geometry) {
+    return null;
+  }
+
+  const tableSettingsStyle: CSSProperties = {
+    left: geometry.table.right,
+    top: geometry.table.top - 8,
+    transform: 'translate(-100%, -100%)',
+  };
+  return (
+    <>
+      <div
+        aria-label="Table settings"
+        className="richer-editor__bubble-menu richer-editor__table-settings"
+        role="toolbar"
+        style={tableSettingsStyle}
+      >
+        <button
+          aria-label="Toggle header row"
+          disabled={!state.canToggleHeaderRow}
+          onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+          onMouseDown={(event) => event.preventDefault()}
+          type="button"
+        >
+          <span aria-hidden="true">Header row</span>
+        </button>
+        <button
+          aria-label="Toggle header column"
+          disabled={!state.canToggleHeaderColumn}
+          onClick={() => editor.chain().focus().toggleHeaderColumn().run()}
+          onMouseDown={(event) => event.preventDefault()}
+          type="button"
+        >
+          <span aria-hidden="true">Header column</span>
+        </button>
+        <span
+          aria-orientation="vertical"
+          className="richer-editor__table-menu-separator"
+          role="separator"
+        />
+        <button
+          aria-label="Delete table"
+          disabled={!state.canDeleteTable}
+          onClick={() => editor.chain().focus().deleteTable().run()}
+          onMouseDown={(event) => event.preventDefault()}
+          type="button"
+        >
+          <span aria-hidden="true">Delete table</span>
+        </button>
+      </div>
+      {geometry.rows.map(({ cell, rect }, index) => {
+        const handleKey = `row:${index}`;
+        const isOpen = isOpenTableHandle(openHandle, 'row', index);
+
+        return (
+          <div
+            className={`richer-editor__table-handle richer-editor__table-handle--row${
+              isOpen ? ' richer-editor__table-handle--open' : ''
+            }`}
+            key={handleKey}
+            style={{
+              height: Math.max(rect.height, 24),
+              left: geometry.table.left - 16,
+              top: rect.top,
+            }}
+          >
+            <button
+              aria-expanded={isOpen}
+              aria-haspopup="menu"
+              aria-label="Row actions"
+              className="richer-editor__table-handle-trigger"
+              onClick={() => {
+                selectTableHandleCell(editor, cell);
+                setOpenHandle((current) =>
+                  isOpenTableHandle(current, 'row', index)
+                    ? null
+                    : { index, type: 'row' },
+                );
+              }}
+              onMouseDown={(event) => event.preventDefault()}
+              ref={(element) => {
+                if (element) {
+                  handleRefs.current.set(handleKey, element);
+                } else {
+                  handleRefs.current.delete(handleKey);
+                }
+              }}
+              type="button"
+            >
+              <span aria-hidden="true" className="richer-editor__handle-dots">
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+            {isOpen ? (
+              <div
+                aria-label="Row actions"
+                className="richer-editor__table-handle-menu"
+                onKeyDown={(event) =>
+                  handleTableActionMenuKeyDown(event, () => {
+                    restoreHandleFocusRef.current = handleKey;
+                    setOpenHandle(null);
+                  })
+                }
+                role="menu"
+              >
+                <button
+                  disabled={!state.canAddRowBefore}
+                  onClick={() => {
+                    editor.chain().focus().addRowBefore().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Add row above
+                </button>
+                <button
+                  disabled={!state.canAddRowAfter}
+                  onClick={() => {
+                    editor.chain().focus().addRowAfter().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Add row below
+                </button>
+                <button
+                  disabled={!state.canDeleteRow}
+                  onClick={() => {
+                    editor.chain().focus().deleteRow().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Delete row
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      {geometry.columns.map(({ cell, rect }, index) => {
+        const handleKey = `column:${index}`;
+        const isOpen = isOpenTableHandle(openHandle, 'column', index);
+
+        return (
+          <div
+            className={`richer-editor__table-handle richer-editor__table-handle--column${
+              isOpen ? ' richer-editor__table-handle--open' : ''
+            }`}
+            key={handleKey}
+            style={{
+              left: rect.left,
+              top: geometry.table.top - 16,
+              width: Math.max(rect.width, 24),
+            }}
+          >
+            <button
+              aria-expanded={isOpen}
+              aria-haspopup="menu"
+              aria-label="Column actions"
+              className="richer-editor__table-handle-trigger richer-editor__table-handle-trigger--column"
+              onClick={() => {
+                selectTableHandleCell(editor, cell);
+                setOpenHandle((current) =>
+                  isOpenTableHandle(current, 'column', index)
+                    ? null
+                    : { index, type: 'column' },
+                );
+              }}
+              onMouseDown={(event) => event.preventDefault()}
+              ref={(element) => {
+                if (element) {
+                  handleRefs.current.set(handleKey, element);
+                } else {
+                  handleRefs.current.delete(handleKey);
+                }
+              }}
+              type="button"
+            >
+              <span aria-hidden="true" className="richer-editor__handle-dots">
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+            {isOpen ? (
+              <div
+                aria-label="Column actions"
+                className="richer-editor__table-handle-menu"
+                onKeyDown={(event) =>
+                  handleTableActionMenuKeyDown(event, () => {
+                    restoreHandleFocusRef.current = handleKey;
+                    setOpenHandle(null);
+                  })
+                }
+                role="menu"
+              >
+                <button
+                  disabled={!state.canAddColumnBefore}
+                  onClick={() => {
+                    editor.chain().focus().addColumnBefore().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Add column left
+                </button>
+                <button
+                  disabled={!state.canAddColumnAfter}
+                  onClick={() => {
+                    editor.chain().focus().addColumnAfter().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Add column right
+                </button>
+                <button
+                  disabled={!state.canDeleteColumn}
+                  onClick={() => {
+                    editor.chain().focus().deleteColumn().run();
+                    setOpenHandle(null);
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  role="menuitem"
+                  type="button"
+                >
+                  Delete column
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -1393,6 +1936,7 @@ export function RicherEditor({
       {features?.bubbleMenu && editable && editor ? (
         <RicherBubbleMenu editor={editor} />
       ) : null}
+      {editable && editor ? <RicherTableMenu editor={editor} /> : null}
       {features?.toolbar ? (
         <RicherToolbar
           editable={editable}
