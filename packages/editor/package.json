@@ -4,11 +4,25 @@
   "description": "A modern, extensible rich-text editor for React, built on Tiptap.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bizjs/richer-editor.git",
+    "directory": "packages/editor"
+  },
+  "homepage": "https://github.com/bizjs/richer-editor#readme",
+  "bugs": {
+    "url": "https://github.com/bizjs/richer-editor/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "sideEffects": [
     "*.css"
   ],
   "files": [
     "dist",
+    "CHANGELOG.md",
     "README.md",
     "LICENSE"
   ],

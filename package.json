@@ -16,9 +16,13 @@
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
     "test:ssr": "pnpm --filter @bizjs/richer-editor test:ssr",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm test:ssr"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build && pnpm test:ssr",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm --filter @bizjs/richer-editor build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "oxlint": "^1.71.0",
     "prettier": "^3.9.0"
   }
