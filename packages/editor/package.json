@@ -1,6 +1,6 @@
 {
   "name": "@bizjs/richer-editor",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A modern, extensible rich-text editor for React, built on Tiptap.",
   "type": "module",
   "license": "MIT",
