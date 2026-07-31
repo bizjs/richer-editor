@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["vitepress/client"]
   },
-  "include": [".vitepress/**/*.ts"]
+  "include": [".vitepress/**/*.ts", "site/**/*.ts", "site/**/*.tsx"]
 }

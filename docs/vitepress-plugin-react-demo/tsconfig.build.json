@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["index.ts", "client/**/*.ts", "client/**/*.vue"],
+  "exclude": ["**/*.test.ts"]
+}

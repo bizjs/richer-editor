@@ -11,7 +11,7 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "types": ["vitepress/client", "vitest/globals"]
+    "types": ["node", "vitepress/client", "vitest/globals"]
   },
   "include": ["*.ts", "client/**/*.ts", "client/**/*.vue"]
 }

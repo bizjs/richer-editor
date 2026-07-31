@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress';
+import { reactDemo } from 'vitepress-plugin-react-demo';
 
 export default defineConfig({
+  extends: reactDemo(),
   srcDir: 'site',
   title: 'Richer Editor',
   description: 'A modern, extensible rich-text editor for React.',
