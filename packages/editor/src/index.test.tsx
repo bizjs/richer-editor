@@ -305,9 +305,12 @@ describe('RicherEditor public component', () => {
     const editor = document.createElement('div');
 
     style.textContent = editorStyles;
-    editor.className = 'richer-editor__content';
-    editor.innerHTML =
-      '<table><tbody><tr><td><p>Cell content</p></td></tr></tbody></table>';
+    editor.className = 'richer-editor';
+    editor.innerHTML = `
+      <div class="richer-editor__content">
+        <table><tbody><tr><td><p>Cell content</p></td></tr></tbody></table>
+      </div>
+    `;
     document.head.append(style);
     document.body.append(editor);
 
@@ -340,16 +343,18 @@ describe('RicherEditor public component', () => {
     const editor = document.createElement('div');
 
     style.textContent = editorStyles;
-    editor.className = 'richer-editor__content';
+    editor.className = 'richer-editor';
     editor.innerHTML = `
-      <table>
-        <tbody>
-          <tr>
-            <td><p>TableKit</p></td>
-            <td><p>中文内容</p></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="richer-editor__content">
+        <table>
+          <tbody>
+            <tr>
+              <td><p>TableKit</p></td>
+              <td><p>中文内容</p></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     `;
     document.head.append(style);
     document.body.append(editor);
@@ -376,13 +381,15 @@ describe('RicherEditor public component', () => {
     const editor = document.createElement('div');
 
     style.textContent = editorStyles;
-    editor.className = 'richer-editor richer-editor__content';
+    editor.className = 'richer-editor';
     editor.innerHTML = `
-      <p>Introduction</p>
-      <h1>Document title</h1>
-      <h2>Adjacent section</h2>
-      <p>Section content</p>
-      <h3>Nested section</h3>
+      <div class="richer-editor__content">
+        <p>Introduction</p>
+        <h1>Document title</h1>
+        <h2>Adjacent section</h2>
+        <p>Section content</p>
+        <h3>Nested section</h3>
+      </div>
     `;
     document.head.append(style);
     document.body.append(editor);
@@ -413,6 +420,188 @@ describe('RicherEditor public component', () => {
     } finally {
       editor.remove();
       style.remove();
+    }
+  });
+
+  it('isolates document content and controls from host page styles', () => {
+    const editorStyle = document.createElement('style');
+    const hostStyle = document.createElement('style');
+    const host = document.createElement('div');
+
+    editorStyle.textContent = editorStyles;
+    hostStyle.textContent = `
+      .vp-doc h2 {
+        position: relative;
+        margin: 48px 0 16px;
+        padding-top: 24px;
+        border-top: 7px solid red;
+        font-size: 3rem;
+      }
+
+      .vp-doc table {
+        display: block;
+        margin: 40px;
+        overflow: auto;
+      }
+
+      .vp-doc p,
+      .vp-doc summary {
+        margin: 16px;
+        line-height: 28px;
+      }
+
+      .vp-doc li + li {
+        margin-top: 12px;
+      }
+
+      .vp-doc tr {
+        background: red;
+        border-top: 5px solid red;
+      }
+
+      .vp-doc td {
+        color: red;
+        font-size: 14px;
+      }
+
+      .vp-doc :not(pre) > code {
+        padding: 6px;
+        color: red;
+        background: red;
+      }
+
+      .vp-doc button {
+        margin: 20px;
+        padding: 20px;
+        font-size: 2rem;
+        text-transform: uppercase;
+      }
+    `;
+    host.className = 'vp-doc';
+    host.innerHTML = `
+      <h2 data-testid="host-heading">Host heading</h2>
+      <div class="richer-editor">
+        <div class="richer-editor__toolbar">
+          <button type="button">Bold</button>
+        </div>
+        <div class="richer-editor__content">
+          <h2>Editor heading</h2>
+          <p>Editor paragraph with <code>inline code</code></p>
+          <ul>
+            <li>First item</li>
+            <li>Second item</li>
+          </ul>
+          <details data-type="details">
+            <summary>Editor summary</summary>
+          </details>
+          <div class="tableWrapper">
+            <table>
+              <tbody>
+                <tr><td><p>Editor cell</p></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    document.head.append(editorStyle, hostStyle);
+    document.body.append(host);
+
+    try {
+      const hostHeading = host.querySelector<HTMLElement>(
+        '[data-testid="host-heading"]',
+      );
+      const editorHeading = host.querySelector<HTMLElement>(
+        '.richer-editor__content h2',
+      );
+      const editorTable = host.querySelector<HTMLTableElement>(
+        '.richer-editor__content table',
+      );
+      const editorParagraph = host.querySelector<HTMLParagraphElement>(
+        '.richer-editor__content p',
+      );
+      const editorCode = host.querySelector<HTMLElement>(
+        '.richer-editor__content code',
+      );
+      const editorItems = host.querySelectorAll<HTMLLIElement>(
+        '.richer-editor__content li',
+      );
+      const editorSummary = host.querySelector<HTMLElement>(
+        '.richer-editor__content summary',
+      );
+      const editorRow = host.querySelector<HTMLTableRowElement>(
+        '.richer-editor__content tr',
+      );
+      const editorCell = host.querySelector<HTMLTableCellElement>(
+        '.richer-editor__content td',
+      );
+      const editorButton = host.querySelector<HTMLButtonElement>(
+        '.richer-editor__toolbar button',
+      );
+
+      expect(
+        window.getComputedStyle(hostHeading as HTMLElement).paddingTop,
+      ).toBe('24px');
+      expect(
+        window.getComputedStyle(hostHeading as HTMLElement).borderTopWidth,
+      ).toBe('7px');
+
+      const headingStyle = window.getComputedStyle(
+        editorHeading as HTMLElement,
+      );
+
+      expect(headingStyle.position).toBe('static');
+      expect(headingStyle.marginTop).toBe('1.5rem');
+      expect(headingStyle.paddingTop).toBe('0px');
+      expect(headingStyle.borderTopWidth).toBe('0px');
+      expect(headingStyle.fontSize).toBe('1.5rem');
+
+      const tableStyle = window.getComputedStyle(
+        editorTable as HTMLTableElement,
+      );
+
+      expect(tableStyle.display).toBe('table');
+      expect(tableStyle.marginTop).toBe('0px');
+      expect(tableStyle.overflow).toBe('visible');
+
+      const paragraphStyle = window.getComputedStyle(
+        editorParagraph as HTMLParagraphElement,
+      );
+
+      expect(paragraphStyle.marginTop).toBe('0.625em');
+      expect(paragraphStyle.lineHeight).toBe('1.5');
+      expect(
+        window.getComputedStyle(editorItems[1] as HTMLLIElement).marginTop,
+      ).toBe('0px');
+      expect(
+        window.getComputedStyle(editorSummary as HTMLElement).marginTop,
+      ).toBe('0px');
+      expect(
+        window.getComputedStyle(editorCode as HTMLElement).paddingTop,
+      ).toBe('0.125em');
+
+      const rowStyle = window.getComputedStyle(
+        editorRow as HTMLTableRowElement,
+      );
+
+      expect(rowStyle.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+      expect(rowStyle.borderTopWidth).toBe('0px');
+      expect(
+        window.getComputedStyle(editorCell as HTMLTableCellElement).fontSize,
+      ).toBe('1rem');
+
+      const buttonStyle = window.getComputedStyle(
+        editorButton as HTMLButtonElement,
+      );
+
+      expect(buttonStyle.marginTop).toBe('0px');
+      expect(buttonStyle.paddingTop).toBe('0.25rem');
+      expect(buttonStyle.fontSize).toBe('0.875rem');
+      expect(buttonStyle.textTransform).toBe('none');
+    } finally {
+      host.remove();
+      hostStyle.remove();
+      editorStyle.remove();
     }
   });
 
