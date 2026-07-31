@@ -4,6 +4,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+docs/.vitepress/cache/
 *.tsbuildinfo
 *.tgz
 .DS_Store

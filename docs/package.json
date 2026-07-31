@@ -1,0 +1,17 @@
+{
+  "name": "@bizjs/richer-editor-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview .",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vitepress": "next",
+    "vue": "^3.5.40"
+  }
+}
